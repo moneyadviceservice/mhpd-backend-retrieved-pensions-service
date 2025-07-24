@@ -1,27 +1,29 @@
 using Azure.Messaging.ServiceBus;
+using MhpdCommon.Constants;
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.MessageBodyModels;
+using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Utils;
+using MhpdCommon.ViewData;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
-using RetrievedPensionsRecordFunction.Models;
-using RetrievedPensionsRecordFunction.Repository;
-using RetrievedPensionsRecordFunction.Utils;
-using System.Text;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System.Net;
-using YamlDotNet.Core.Tokens;
+using RetrievedPensionsRecordFunction.Models;
+using RetrievedPensionsRecordFunction.Repository;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Text;
+using System.Text.Json.Nodes;
 
 namespace RetrievedPensionsRecordFunction;
 
 public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger,
     IIdValidator idValidator,
     IMessageParser messageParser,
-    IPensionRecordValidator pensionValidator,
-    IPensionRecordRepository pensionRepository)
+    IPensionRecordRepository pensionRepository,
+    IArrangementProcessor arrangementProcessor)
 {
     private const string InvalidPayloadResponse = "Invalid retrieved pension payload";
 
@@ -62,15 +64,17 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
     }
 
-    private RetrievedPensionDetailsPayload ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
+    private RetrievedPensionRecord ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
     {
         var messageBody = Encoding.UTF8.GetString(message.Body);
         string? logMessage;
         RetrievedPensionDetailsPayload? payload;
 
+        var messagePayload = arrangementProcessor.ProcessArrangement(messageBody);
+
         try
         {
-            payload = messageParser.ToRetrievedPensionPayload(messageBody);
+            payload = messageParser.ToRetrievedPensionPayload(messagePayload);
         }
         catch (AggregateException error)
         {
@@ -85,19 +89,34 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             throw new InvalidDataException(logMessage, error);
         }
 
-        if (!pensionValidator.ValidateRecord(payload, out var reason))
-        {
-            throw new InvalidDataException($"{InvalidPayloadResponse} - {reason}");
-        }
+        ArgumentNullException.ThrowIfNull(payload);
 
-        return payload!;
+        var record = new RetrievedPensionRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            CorrelationId = message.CorrelationId,
+            Pei = payload.Pei,
+            Category = GetCategory(messagePayload),
+            PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
+            RetrievalResult = payload.RetrievalResult
+        };
+
+        return record;
+    }
+
+    private static string GetCategory(string arrangement)
+    {
+        var root = JsonNode.Parse(arrangement)?.AsObject();
+        var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
+        var pensionCategory = resultArray?[0]?[PensionConstants.PensionCategory]?.GetValue<string>();
+        return pensionCategory ?? EvaluationConstants.Category.Unsupported;
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
     {
         var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], " +
             $"MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
-        logger.LogWarning("Message Details : {details} Body: {body}", logMessage, receivedMessage.Body);
+        logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
     }
 }
 
@@ -107,7 +126,7 @@ public static class RetrievedPensionsFunctionOpenApiSpec
     private const string Tag = "items";
 
     [Function("GetItem")]
-    [OpenApiOperation(operationId: "GetItem", tags: [Tag])]
+    [OpenApiOperation(operationId: "GetItem", tags: Tag)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string))]
     public static HttpResponseData Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
     {

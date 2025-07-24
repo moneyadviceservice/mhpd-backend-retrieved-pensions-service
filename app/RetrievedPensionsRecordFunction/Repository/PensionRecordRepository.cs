@@ -1,10 +1,9 @@
-﻿using MhpdCommon.Models.MessageBodyModels;
+﻿using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
-using MhpdCommon.Models.Configuration;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
@@ -23,19 +22,30 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         return [.. response];
     }
 
-    public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionDetailsPayload payload)
+    public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionRecord record)
     {
         LogDatabaseInfo();
-        if(string.IsNullOrWhiteSpace(correlationId)) return false;
 
-        var record = new RetrievedPensionRecord
+        if (record is null)
         {
-            Id = Guid.NewGuid().ToString(),
-            CorrelationId = correlationId,
-            Pei = payload.Pei,
-            PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
-            RetrievalResult = payload.RetrievalResult
-        };
+            logger.LogCritical("Retrieved pension record is null.");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(correlationId))
+        {
+            logger.LogError("Correlation Id is null.");
+            return false;
+        }
+
+        //var record = new RetrievedPensionRecord
+        //{
+        //    Id = Guid.NewGuid().ToString(),
+        //    CorrelationId = correlationId,
+        //    Pei = payload.Pei,
+        //    PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
+        //    RetrievalResult = payload.RetrievalResult
+        //};
 
         Container container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
 
@@ -46,14 +56,14 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         if (response.StatusCode == HttpStatusCode.OK ||
             response.StatusCode == HttpStatusCode.Created)
         {
-            logMessage = $"Retrieved pension record for PEI: {payload.Pei} " +
+            logMessage = $"Retrieved pension record for PEI: {record.Pei} " +
                 $"{(response.StatusCode == HttpStatusCode.Created ? "created" : "updated")}.";
 
             logger.LogWarning(logMessage);
             return true;
         }
 
-        logMessage = $"Unable to save a record for pension with PEI: {payload.Pei}";
+        logMessage = $"Unable to save a record for pension with PEI: {record.Pei}";
         logger.LogCritical(logMessage);
         return false;
     }
