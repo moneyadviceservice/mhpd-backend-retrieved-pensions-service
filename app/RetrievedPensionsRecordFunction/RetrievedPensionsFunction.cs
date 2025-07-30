@@ -107,18 +107,20 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
     private static string GetCategory(string arrangement)
     {
-        var root = JsonNode.Parse(arrangement)?.AsObject();
-        var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
-        var pensionCategory = resultArray?[0]?[PensionConstants.PensionCategory]?.GetValue<string>();
-        return pensionCategory ?? EvaluationConstants.Category.Unsupported;
+        return GetArrangementProperty(arrangement, PensionConstants.PensionCategory, EvaluationConstants.Category.Unsupported);
     }
 
     private static string GetAssetId(string arrangement)
     {
+        return GetArrangementProperty(arrangement, PensionConstants.ExternalAssetId, Guid.NewGuid().ToString());
+    }
+
+    private static string GetArrangementProperty(string arrangement, string propertyName, string defaultValue)
+    {
         var root = JsonNode.Parse(arrangement)?.AsObject();
         var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
-        var assetId = resultArray?[0]?[PensionConstants.ExternalAssetId]?.GetValue<string>();
-        return assetId;
+        var assetId = resultArray?[0]?[propertyName]?.GetValue<string>();
+        return assetId ?? defaultValue;
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
