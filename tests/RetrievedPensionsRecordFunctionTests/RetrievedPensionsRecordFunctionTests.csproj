@@ -10,6 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\DB_ERI-DB_AP-NONE-Payload.json" />
+    <None Remove="Data\DC_ERI-NET_AP-ANO-Payload.json" />
+    <None Remove="Data\DC_ERI-NONE-SML_AP-NONE-Payload.json" />
     <None Remove="Data\EmptyArrangementsPayload.json" />
     <None Remove="Data\EmptyGuidRecordIdPayload.json" />
     <None Remove="Data\InvalidPeiPatternPayload.json" />
@@ -18,6 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Data\DB_ERI-DB_AP-NONE-Payload.json" />
+    <EmbeddedResource Include="Data\DC_ERI-NET_AP-ANO-Payload.json" />
+    <EmbeddedResource Include="Data\DC_ERI-NONE-SML_AP-NONE-Payload.json" />
     <EmbeddedResource Include="Data\EmptyArrangementsPayload.json" />
     <EmbeddedResource Include="Data\EmptyGuidRecordIdPayload.json" />
     <EmbeddedResource Include="Data\InvalidPeiPatternPayload.json" />

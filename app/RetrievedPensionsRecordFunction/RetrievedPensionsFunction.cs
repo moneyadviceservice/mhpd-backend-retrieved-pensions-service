@@ -96,6 +96,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             Id = Guid.NewGuid().ToString(),
             CorrelationId = message.CorrelationId,
             Pei = payload.Pei,
+            AssetId = GetAssetId(messagePayload),
             Category = GetCategory(messagePayload),
             PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
             RetrievalResult = payload.RetrievalResult
@@ -110,6 +111,14 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
         var pensionCategory = resultArray?[0]?[PensionConstants.PensionCategory]?.GetValue<string>();
         return pensionCategory ?? EvaluationConstants.Category.Unsupported;
+    }
+
+    private static string GetAssetId(string arrangement)
+    {
+        var root = JsonNode.Parse(arrangement)?.AsObject();
+        var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
+        var assetId = resultArray?[0]?[PensionConstants.ExternalAssetId]?.GetValue<string>();
+        return assetId;
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)

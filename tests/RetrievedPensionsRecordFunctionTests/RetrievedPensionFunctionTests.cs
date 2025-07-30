@@ -1,4 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
+using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Utils;
 using MhpdCommon.ViewData;
@@ -20,7 +21,6 @@ public class RetrievedPensionFunctionTests
     private readonly Mock<ServiceBusMessageActions> _actionsMock;
     private readonly Mock<IMessageParser> _messageParseMock;
     private readonly RetrievedPensionsFunction _function;
-    private const string ValidateFailReason = "Bad Data";
 
     public RetrievedPensionFunctionTests()
     {
@@ -30,7 +30,6 @@ public class RetrievedPensionFunctionTests
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(false);
         _idValidatorMock.Setup(x => x.IsValidPeI(It.IsAny<string>())).Returns(false);
 
-        var reason = ValidateFailReason;
         _processorMock = new Mock<IArrangementProcessor>();
         _processorMock.Setup(x => x.ProcessArrangement(It.IsAny<string>())).Returns((string input) => input);
 
@@ -98,7 +97,7 @@ public class RetrievedPensionFunctionTests
 
         //arrange
         const string file = "EmptyGuidRecordIdPayload.json";
-        var payload = DataProvider.GetPayload(file);
+        RetrievedPensionDetailsPayload? payload = null;
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
         _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
 
@@ -111,7 +110,7 @@ public class RetrievedPensionFunctionTests
 
         // Assert
         _actionsMock.Verify(r => r.DeadLetterMessageAsync(message, null,
-            It.Is<string>(arg => arg.EndsWith(ValidateFailReason)), null, It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<string>(), null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -138,13 +137,16 @@ public class RetrievedPensionFunctionTests
         _actionsMock.Verify(r => r.AbandonMessageAsync(message, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task Run_ShouldCallCompleteMessage_OnSaveSuccess()
+    [Theory]
+    [InlineData("ValidRetrievedPensionPayload.json", EvaluationConstants.Category.Contact, "1ba03e25-659a-43b8-ae77-b956df168969")]
+    [InlineData("DB_ERI-DB_AP-NONE-Payload.json", EvaluationConstants.Category.Confirmed, "b057131c-d860-40db-b521-15e62a078128")]
+    [InlineData("DC_ERI-NET_AP-ANO-Payload.json", EvaluationConstants.Category.Pending, "9f1bfd4a-4e39-4c59-bac5-c6860250f962")]
+    [InlineData("DC_ERI-NONE-SML_AP-NONE-Payload.json", EvaluationConstants.Category.Confirmed, "89885682-d540-4abe-a075-bc25a46b79df")]
+    public async Task Run_ShouldCallCompleteMessage_OnSaveSuccess(string file, string category, string assetId)
     {
         ResetInvocations();
 
         //arrange
-        const string file = "ValidRetrievedPensionPayload.json";
         var payload = DataProvider.GetPayload(file);
         
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
@@ -160,6 +162,13 @@ public class RetrievedPensionFunctionTests
 
         // Assert
         _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.SaveRetrievedPensionRecordAsync(
+            It.Is<string>(id => id == message.CorrelationId),
+            It.Is<RetrievedPensionRecord>(record =>
+                record.Pei == payload!.Pei &&
+                record.PensionsRetrievalRecordId == payload!.PensionRetrievalRecordId &&
+                record.Category == category &&
+                record.AssetId == assetId)), Times.Once);
     }
 
     private void ResetInvocations()

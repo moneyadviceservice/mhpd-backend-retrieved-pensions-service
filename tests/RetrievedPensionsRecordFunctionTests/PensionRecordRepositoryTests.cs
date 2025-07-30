@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using RetrievedPensionsRecordFunction.Repository;
+using RetrievedPensionsRecordFunctionTests.Data;
 using System.Net;
 
 namespace RetrievedPensionsRecordFunctionTests;
