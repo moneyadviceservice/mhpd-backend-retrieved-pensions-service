@@ -98,6 +98,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             Pei = payload.Pei,
             AssetId = GetAssetId(messagePayload),
             Category = GetCategory(messagePayload),
+            SchemeName = GetSchemeName(messagePayload),
             PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
             RetrievalResult = payload.RetrievalResult
         };
@@ -113,6 +114,11 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
     private static string GetAssetId(string arrangement)
     {
         return GetArrangementProperty(arrangement, PensionConstants.ExternalAssetId, Guid.NewGuid().ToString());
+    }
+
+    private static string GetSchemeName(string arrangement)
+    {
+        return GetArrangementProperty(arrangement, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme);
     }
 
     private static string GetArrangementProperty(string arrangement, string propertyName, string defaultValue)

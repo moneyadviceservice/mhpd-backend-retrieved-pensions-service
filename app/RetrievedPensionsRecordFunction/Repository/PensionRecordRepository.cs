@@ -4,6 +4,9 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
+using System.Text;
+using static MhpdCommon.ViewData.PensionEnums;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
@@ -12,10 +15,10 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 {
     private readonly CosmosBusinessConfiguration _configuration = config.Value;
 
-    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId)
+    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId, string? category = null, string? assetId = null)
     {
         var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
+        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId, category, assetId);
 
         var response = await iterator.ReadNextAsync();
 
@@ -37,15 +40,6 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
             logger.LogError("Correlation Id is null.");
             return false;
         }
-
-        //var record = new RetrievedPensionRecord
-        //{
-        //    Id = Guid.NewGuid().ToString(),
-        //    CorrelationId = correlationId,
-        //    Pei = payload.Pei,
-        //    PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
-        //    RetrievalResult = payload.RetrievalResult
-        //};
 
         Container container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
 
@@ -83,12 +77,40 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         return response.Count;
     }
 
-    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string pensionsRetrievalRecordId)
+    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string pensionsRetrievalRecordId, string? category = null, string? assetId = null)
     {
-        var query = new QueryDefinition("SELECT * FROM c WHERE c.pensionsRetrievalRecordId = @retrievalId")
-                .WithParameter("@retrievalId", pensionsRetrievalRecordId);
+        var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
+        var parameters = new Dictionary<string, string>();
 
-        return container.GetItemQueryIterator<RetrievedPensionRecord>(query);
+        //var query = new QueryDefinition("SELECT * FROM c WHERE c.pensionsRetrievalRecordId = @retrievalId")
+        //        .WithParameter("@retrievalId", pensionsRetrievalRecordId);
+
+        if (!string.IsNullOrWhiteSpace(pensionsRetrievalRecordId))
+        {
+            queryBuilder.Append(" AND c.pensionsRetrievalRecordId = @retrievalId");
+            parameters["@retrievalId"] = pensionsRetrievalRecordId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            queryBuilder.Append(" AND c.category = @category");
+            parameters["@category"] = category;
+        }
+
+        if (!string.IsNullOrWhiteSpace(assetId))
+        {
+            queryBuilder.Append(" AND c.assetId = @assetId");
+            parameters["@assetId"] = assetId;
+        }
+
+        var queryDefinition = new QueryDefinition(queryBuilder.ToString());
+
+        foreach (var param in parameters)
+        {
+            queryDefinition.WithParameter(param.Key, param.Value);
+        }
+
+        return container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition);
     }
 
     private void LogDatabaseInfo()

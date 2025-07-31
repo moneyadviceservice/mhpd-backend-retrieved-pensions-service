@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:7071"
+      "url": "http://localhost:7289"
     }
   ],
   "paths": {
@@ -51,6 +51,22 @@
             "in": "query",
             "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Gets a subset of the pensions retrieval records that have the specified classification.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "query",
+            "description": "Gets a specific pensions retrieval record with the specified Id.",
             "schema": {
               "type": "string"
             }
@@ -119,5 +135,5 @@
       }
     }
   },
-  "components": { }
+  "components": {}
 }

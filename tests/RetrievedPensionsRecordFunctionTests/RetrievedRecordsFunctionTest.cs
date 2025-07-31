@@ -1,4 +1,5 @@
 ﻿using MhpdCommon.Constants;
+using MhpdCommon.Constants.HttpClient;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Utils;
 using Microsoft.AspNetCore.Http;
@@ -28,7 +29,8 @@ public class RetrievedRecordsFunctionTest
         _loggerMock = new Mock<ILogger<RetrievedRecordsFunction>>();
 
         _repository = new Mock<IPensionRecordRepository>();
-        _repository.Setup(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>())).ReturnsAsync([new RetrievedPensionRecord()]).Verifiable();
+        _repository.Setup(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync([new RetrievedPensionRecord()]).Verifiable();
         _repository.Setup(mock => mock.DeleteRetrievedRecordsAsync(It.IsAny<string>())).ReturnsAsync(It.IsAny<int>()).Verifiable();
 
         _function = new RetrievedRecordsFunction(_loggerMock.Object, _repository.Object, _idValidatorMock.Object);
@@ -41,9 +43,13 @@ public class RetrievedRecordsFunctionTest
     {
         //Arrange
         var retrievalRecordId = Guid.NewGuid().ToString();
+        var category = "Contact";
+        var assetId = "1ba03e25-659a-43b8-ae77-b956df168969";
         var queryParams = new Dictionary<string, StringValues>
         {
-            { Constants.RetrievedRecordQuery, retrievalRecordId}
+            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId},
+            { QueryParams.RetrievedPensions.PensionCategory, category },
+            { QueryParams.RetrievedPensions.AssetId, assetId }
         };
 
         var headers = new Dictionary<string, StringValues>();
@@ -63,13 +69,11 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<List<RetrievedPensionRecord>>(result.Value);
-        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(retrievalRecordId), Times.Once);
+        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(retrievalRecordId, category, assetId), Times.Once);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Function_ShouldReturnBadRequest_WhenQueryIsInvalid(bool withParams)
+    [Fact]
+    public async Task Function_ShouldReturnBadRequest_WhenQueryIsInvalid()
     {
         //Arrange
         var correlationId = Guid.NewGuid().ToString();
@@ -83,10 +87,7 @@ public class RetrievedRecordsFunctionTest
             { HeaderConstants.CorrelationId, correlationId}
         };
 
-        if (withParams)
-        {
-            queryParams.Add(Constants.RetrievedRecordQuery, Guid.NewGuid().ToString());
-        }
+        queryParams.Add(QueryParams.RetrievedPensions.RetrievalRecordId, Guid.NewGuid().ToString());
 
         var queries = new QueryCollection(queryParams);
         var mockRequest = new Mock<HttpRequest>();
@@ -100,7 +101,7 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<BadRequestObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(Constants.InvalidRecordId, result.Value);
-        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>()), Times.Never);
+        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -111,7 +112,7 @@ public class RetrievedRecordsFunctionTest
 
         var queryParams = new Dictionary<string, StringValues>
         {
-            { Constants.RetrievedRecordQuery, Guid.NewGuid().ToString() }
+            { QueryParams.RetrievedPensions.RetrievalRecordId, Guid.NewGuid().ToString() }
         };
 
         var headers = new Dictionary<string, StringValues>
@@ -130,7 +131,7 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<BadRequestObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(Constants.InvalidCorrelationId, result.Value);
-        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>()), Times.Never);
+        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Theory]
@@ -142,7 +143,7 @@ public class RetrievedRecordsFunctionTest
         var retrievalRecordId = Guid.NewGuid().ToString();
         var queryParams = new Dictionary<string, StringValues>
         {
-            { Constants.RetrievedRecordQuery, retrievalRecordId}
+            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId}
         };
 
         var headers = new Dictionary<string, StringValues>();
