@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RetrievedPensionsRecordFunction;
+using RetrievedPensionsRecordFunction.Models;
 using RetrievedPensionsRecordFunction.Repository;
 using RetrievedPensionsRecordFunctionTests.Data;
 
@@ -169,6 +170,38 @@ public class RetrievedPensionFunctionTests
                 record.PensionsRetrievalRecordId == payload!.PensionRetrievalRecordId &&
                 record.Category == category &&
                 record.AssetId == assetId)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Run_ShouldCallCompleteMessage_OnSysErrorPayload()
+    {
+        ResetInvocations();
+
+        //arrange
+        const string file = "SysErrorPayload.json";
+        var payload = DataProvider.GetPayload(file);
+
+        _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
+
+        var content = DataProvider.GetString(file);
+        var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
+            body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
+
+        // Act
+        await _function.Run(message, _actionsMock.Object);
+
+        // Assert
+        _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.SaveRetrievedPensionRecordAsync(
+            It.Is<string>(id => id == message.CorrelationId),
+            It.Is<RetrievedPensionRecord>(record =>
+                record.Pei == payload!.Pei &&
+                record.PensionsRetrievalRecordId == payload!.PensionRetrievalRecordId &&
+                record.Category == EvaluationConstants.Category.Error && 
+                record.PensionType == EvaluationConstants.Category.Error &&
+                record.MatchType == EvaluationConstants.Category.Error)), Times.Once);
     }
 
     private void ResetInvocations()

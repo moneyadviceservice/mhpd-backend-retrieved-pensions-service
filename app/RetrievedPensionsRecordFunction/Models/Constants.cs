@@ -10,4 +10,6 @@ public static class Constants
     public const string InvalidQueryFilters = "Filtering by category requires a retrieval Id.";
     public const string MissingQueryFilters = "At least one of sessionId or externalAssetId must be provided.";
     public const string UnkonwnPensionScheme = "Unknown Pension Scheme";
+    public const string UnkonwnPensionType = "Unknown Pension Type";
+    public const string UnkonwnMatchType = "Unknown Match Type";
 }

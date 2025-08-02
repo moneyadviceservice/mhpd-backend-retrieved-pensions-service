@@ -15,6 +15,7 @@ using RetrievedPensionsRecordFunction.Repository;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace RetrievedPensionsRecordFunction;
@@ -91,14 +92,19 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         ArgumentNullException.ThrowIfNull(payload);
 
+        var root = JsonNode.Parse(messagePayload)?.AsObject();
+        var resultNode = root?[PensionConstants.RetrievalResult];
+
         var record = new RetrievedPensionRecord
         {
             Id = Guid.NewGuid().ToString(),
             CorrelationId = message.CorrelationId,
             Pei = payload.Pei,
-            AssetId = GetAssetId(messagePayload),
-            Category = GetCategory(messagePayload),
-            SchemeName = GetSchemeName(messagePayload),
+            AssetId = GetAssetId(resultNode),
+            Category = GetCategory(resultNode),
+            SchemeName = GetSchemeName(resultNode),
+            PensionType = GetPensionType(resultNode),
+            MatchType = GetMatchType(resultNode),
             PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
             RetrievalResult = payload.RetrievalResult
         };
@@ -106,25 +112,40 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return record;
     }
 
-    private static string GetCategory(string arrangement)
+    private static string GetCategory(JsonNode? resultNode)
     {
-        return GetArrangementProperty(arrangement, PensionConstants.PensionCategory, EvaluationConstants.Category.Unsupported);
+        return GetArrangementProperty(resultNode, PensionConstants.PensionCategory, EvaluationConstants.Category.Unsupported);
     }
 
-    private static string GetAssetId(string arrangement)
+    private static string GetAssetId(JsonNode? resultNode)
     {
-        return GetArrangementProperty(arrangement, PensionConstants.ExternalAssetId, Guid.NewGuid().ToString());
+        var defaultValue = Guid.NewGuid().ToString();
+        return GetArrangementProperty(resultNode, PensionConstants.ExternalAssetId, defaultValue, defaultValue);
     }
 
-    private static string GetSchemeName(string arrangement)
+    private static string GetSchemeName(JsonNode? resultNode)
     {
-        return GetArrangementProperty(arrangement, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme);
+        return GetArrangementProperty(resultNode, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme);
     }
 
-    private static string GetArrangementProperty(string arrangement, string propertyName, string defaultValue)
+    private static string GetPensionType(JsonNode? resultNode)
     {
-        var root = JsonNode.Parse(arrangement)?.AsObject();
-        var resultArray = root?[PensionConstants.RetrievalResult]?.AsArray();
+        return GetArrangementProperty(resultNode, PensionConstants.PensionType, Constants.UnkonwnPensionType);
+    }
+
+    private static string GetMatchType(JsonNode? resultNode)
+    {
+        return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType);
+    }
+
+    private static string GetArrangementProperty(JsonNode? resultNode, string propertyName, string defaultValue, string valueOnError = EvaluationConstants.Category.Error)
+    {
+        if(resultNode == null || resultNode.GetValueKind() != JsonValueKind.Array)
+        {
+            return valueOnError;
+        }
+
+        var resultArray = resultNode?.AsArray();
         var assetId = resultArray?[0]?[propertyName]?.GetValue<string>();
         return assetId ?? defaultValue;
     }
