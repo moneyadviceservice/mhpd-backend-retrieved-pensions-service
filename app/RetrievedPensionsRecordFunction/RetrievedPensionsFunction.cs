@@ -145,7 +145,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             return valueOnError;
         }
 
-        var resultArray = resultNode?.AsArray();
+        var resultArray = resultNode.AsArray();
         var assetId = resultArray?[0]?[propertyName]?.GetValue<string>();
         return assetId ?? defaultValue;
     }

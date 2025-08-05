@@ -82,9 +82,6 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
         var parameters = new Dictionary<string, string>();
 
-        //var query = new QueryDefinition("SELECT * FROM c WHERE c.pensionsRetrievalRecordId = @retrievalId")
-        //        .WithParameter("@retrievalId", pensionsRetrievalRecordId);
-
         if (!string.IsNullOrWhiteSpace(pensionsRetrievalRecordId))
         {
             queryBuilder.Append(" AND c.pensionsRetrievalRecordId = @retrievalId");
