@@ -29,12 +29,6 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
     {
         LogDatabaseInfo();
 
-        if (record is null)
-        {
-            logger.LogCritical("Retrieved pension record is null.");
-            return false;
-        }
-
         if (string.IsNullOrWhiteSpace(correlationId))
         {
             logger.LogError("Correlation Id is null.");

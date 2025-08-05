@@ -75,19 +75,6 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    public async Task WhenNullRecordIsProvided_NewRecordIsNotSaved()
-    {
-        //Arrange
-        RetrievedPensionRecord? payload = null;
-
-        //Act
-        var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
-
-        //Assert
-        Assert.False(result);
-    }
-
-    [Fact]
     public async Task WhenExistingPayloadIsProvided_RecordIsUpdated()
     {
         //Arrange
