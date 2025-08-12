@@ -105,6 +105,8 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             SchemeName = GetSchemeName(resultNode),
             PensionType = GetPensionType(resultNode),
             MatchType = GetMatchType(resultNode),
+            HasIncome = GetIncome(resultNode),
+            Administrator = GetAdministrator(resultNode),
             PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
             RetrievalResult = payload.RetrievalResult
         };
@@ -138,7 +140,17 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType);
     }
 
-    private static string GetArrangementProperty(JsonNode? resultNode, string propertyName, string defaultValue, string valueOnError = EvaluationConstants.Category.Error)
+    private static string GetIncome(JsonNode? resultNode)
+    {
+        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, "false");
+    }
+
+    private static string GetAdministrator(JsonNode? resultNode)
+    {
+        return GetArrangementProperty(resultNode, $"{PensionConstants.PensionAdministrator}.name", Constants.UnkonwnAdministrator);
+    }
+
+    private static string GetArrangementProperty(JsonNode? resultNode, string propertyPath, string defaultValue, string valueOnError = EvaluationConstants.Category.Error)
     {
         if(resultNode == null || resultNode.GetValueKind() != JsonValueKind.Array)
         {
@@ -146,8 +158,24 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
 
         var resultArray = resultNode.AsArray();
-        var assetId = resultArray?[0]?[propertyName]?.GetValue<string>();
-        return assetId ?? defaultValue;
+        if (resultArray.FirstOrDefault() is not JsonObject firstObj) return defaultValue;
+
+        var segments = propertyPath.Split('.');
+        JsonNode? currentNode = firstObj;
+
+        foreach (var segment in segments)
+        {
+            if (currentNode is JsonObject obj && obj.TryGetPropertyValue(segment, out var next))
+            {
+                currentNode = next;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
+        return currentNode?.GetValue<string>() ?? defaultValue;
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)

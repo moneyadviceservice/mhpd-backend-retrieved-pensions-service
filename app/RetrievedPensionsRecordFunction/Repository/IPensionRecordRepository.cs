@@ -8,5 +8,7 @@ public interface IPensionRecordRepository
 
     Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId, string? category = null, string? assetId = null);
 
+    Task<List<string>> GetRetrievedPeisAsync(string pensionsRetrievalRecordId);
+
     Task<int> DeleteRetrievedRecordsAsync(string pensionsRetrievalRecordId);
 }

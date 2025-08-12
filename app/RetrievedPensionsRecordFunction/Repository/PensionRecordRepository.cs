@@ -5,8 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text;
-using static MhpdCommon.ViewData.PensionEnums;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
@@ -23,6 +21,16 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         var response = await iterator.ReadNextAsync();
 
         return [.. response];
+    }
+
+    public async Task<List<string>> GetRetrievedPeisAsync(string pensionsRetrievalRecordId)
+    {
+        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
+        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
+
+        var response = await iterator.ReadNextAsync();
+
+        return [.. response.Select(record => record.Pei!)];
     }
 
     public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionRecord record)

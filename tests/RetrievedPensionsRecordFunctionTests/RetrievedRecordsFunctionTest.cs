@@ -31,6 +31,8 @@ public class RetrievedRecordsFunctionTest
         _repository = new Mock<IPensionRecordRepository>();
         _repository.Setup(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync([new RetrievedPensionRecord()]).Verifiable();
+        _repository.Setup(mock => mock.GetRetrievedPeisAsync(It.IsAny<string>()))
+            .ReturnsAsync(["A", "B", "C"]).Verifiable();
         _repository.Setup(mock => mock.DeleteRetrievedRecordsAsync(It.IsAny<string>())).ReturnsAsync(It.IsAny<int>()).Verifiable();
 
         _function = new RetrievedRecordsFunction(_loggerMock.Object, _repository.Object, _idValidatorMock.Object);
@@ -70,6 +72,39 @@ public class RetrievedRecordsFunctionTest
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<List<RetrievedPensionRecord>>(result.Value);
         _repository.Verify(mock => mock.GetRetrievedRecordsAsync(retrievalRecordId, category, assetId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPeis_ShouldReturnOk_WhenHeadersAreValid()
+    {
+        //Arrange
+        var retrievalRecordId = Guid.NewGuid().ToString();
+        var category = "Contact";
+        var assetId = "1ba03e25-659a-43b8-ae77-b956df168969";
+        var queryParams = new Dictionary<string, StringValues>
+        {
+            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId},
+            { QueryParams.RetrievedPensions.PensionCategory, category },
+            { QueryParams.RetrievedPensions.AssetId, assetId }
+        };
+
+        var headers = new Dictionary<string, StringValues>
+        {
+            { HeaderConstants.CorrelationId, Guid.NewGuid().ToString() }
+        };
+
+        var mockRequest = new Mock<HttpRequest>();
+        mockRequest.Setup(req => req.Query).Returns(new QueryCollection(queryParams));
+        mockRequest.Setup(req => req.Headers).Returns(new HeaderDictionary(headers));
+
+        //Act
+        var response = await _function.GetPeisAsync(mockRequest.Object);
+
+        //Assert
+        var result = Assert.IsType<OkObjectResult>(response);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        Assert.IsType<List<string>>(result.Value);
+        _repository.Verify(mock => mock.GetRetrievedPeisAsync(retrievalRecordId), Times.Once);
     }
 
     [Fact]

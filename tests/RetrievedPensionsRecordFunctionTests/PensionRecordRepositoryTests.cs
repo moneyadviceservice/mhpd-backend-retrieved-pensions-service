@@ -121,6 +121,29 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
+    public async Task WhenPeiIsRequested_DatabaseResultIsCorrect()
+    {
+        //Arrange
+        List<RetrievedPensionRecord> records = [
+            new RetrievedPensionRecord{ Pei = "A"},
+            new RetrievedPensionRecord{ Pei = "B"},
+            new RetrievedPensionRecord{ Pei = "C"}
+        ];
+
+        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
+        _readResponse.Setup(mock => mock.Count).Returns(records.Count);
+
+        //Act
+        var result = await _repository.GetRetrievedPeisAsync(Guid.NewGuid().ToString());
+
+        //Assert
+        Assert.Equal(records.Count, result.Count);
+        Assert.Contains("A", result);
+        Assert.Contains("B", result);
+        Assert.Contains("C", result);
+    }
+
+    [Fact]
     public async Task WhenRecordAreDeleted_DatabaseResultIsCorrect()
     {
         //Arrange

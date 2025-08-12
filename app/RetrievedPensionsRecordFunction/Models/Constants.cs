@@ -12,4 +12,5 @@ public static class Constants
     public const string UnkonwnPensionScheme = "Unknown Pension Scheme";
     public const string UnkonwnPensionType = "Unknown Pension Type";
     public const string UnkonwnMatchType = "Unknown Match Type";
+    public const string UnkonwnAdministrator = "Unknown Pension Administrator";
 }

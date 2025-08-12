@@ -16,6 +16,28 @@ namespace RetrievedPensionsRecordFunction
 {
     public class RetrievedRecordsFunction(ILogger<RetrievedRecordsFunction> logger, IPensionRecordRepository repository, IIdValidator validator)
     {
+        [Function("GetRetrievedPeis")]
+        [OpenApiOperation(operationId: "get-retrieved-peis",
+            Summary = "Get Retrieved Pension Records",
+            Description = "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.")]
+        [OpenApiParameter(
+            QueryParams.RetrievedPensions.RetrievalRecordId,
+            In = ParameterLocation.Query,
+            Description = "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            Required = true)]
+        [OpenApiParameter(
+        HeaderConstants.CorrelationId,
+        In = ParameterLocation.Header,
+        Description = "An Id with which to group all logging statements made during a single session",
+        Required = false)]
+        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), 
+            Description = "The array of Retrieved Peis that match the provided query parameters")]
+        [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
+        public async Task<IActionResult> GetPeisAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-peis")] HttpRequest req)
+        {
+            return await ProcessRetrievedRecordsAsync(req, Constants.HttpGetLogSource, id => repository.GetRetrievedPeisAsync(id));
+        }
+
         [Function("GetRetrievedRecords")]
         [OpenApiOperation(operationId: "get-retrieved-pensions-records",
             Summary = "Get Retrieved Pension Records",
@@ -40,7 +62,7 @@ namespace RetrievedPensionsRecordFunction
         In = ParameterLocation.Header,
         Description = "An Id with which to group all logging statements made during a single session",
         Required = false)]
-        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), 
+        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string),
             Description = "The array of Retrieved Pension Records that match the provided query parameters")]
         [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
         public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-pension-records")] HttpRequest req)
