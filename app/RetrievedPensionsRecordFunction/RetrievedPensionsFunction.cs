@@ -175,7 +175,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
         }
 
-        return currentNode?.GetValue<string>() ?? defaultValue;
+        return currentNode?.ToJsonString().Trim('"') ?? defaultValue;
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
