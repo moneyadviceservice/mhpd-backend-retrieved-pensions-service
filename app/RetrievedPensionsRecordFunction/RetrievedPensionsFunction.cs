@@ -17,6 +17,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using static MhpdCommon.ViewData.EvaluationConstants;
 
 namespace RetrievedPensionsRecordFunction;
 
@@ -70,12 +71,35 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         var messageBody = Encoding.UTF8.GetString(message.Body);
         string? logMessage;
         RetrievedPensionDetailsPayload? payload;
-
-        var messagePayload = arrangementProcessor.ProcessArrangement(messageBody);
+        var (pei, retrievalId) = GetPayloadIds(messageBody);
 
         try
         {
-            payload = messageParser.ToRetrievedPensionPayload(messagePayload);
+            var classifiedPayload = arrangementProcessor.ProcessArrangement(messageBody);
+            payload = messageParser.ToRetrievedPensionPayload(classifiedPayload);
+
+            ArgumentNullException.ThrowIfNull(payload);
+
+            var root = JsonNode.Parse(classifiedPayload)?.AsObject();
+            var resultNode = root?[PensionConstants.RetrievalResult];
+
+            var record = new RetrievedPensionRecord
+            {
+                Id = Guid.NewGuid().ToString(),
+                CorrelationId = message.CorrelationId,
+                Pei = pei,
+                PensionsRetrievalRecordId = retrievalId,
+                AssetId = GetAssetId(resultNode),
+                Category = GetCategory(resultNode),
+                SchemeName = GetSchemeName(resultNode),
+                PensionType = GetPensionType(resultNode),
+                MatchType = GetMatchType(resultNode),
+                HasIncome = GetIncome(resultNode),
+                Administrator = GetAdministrator(resultNode),
+                RetrievalResult = payload.RetrievalResult
+            };
+
+            return record;
         }
         catch (AggregateException error)
         {
@@ -87,31 +111,16 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
 
             logMessage = builder.ToString();
-            throw new InvalidDataException(logMessage, error);
+            logger.LogCritical(error, logMessage);
+
+            return CreateFailedRetrievedPension(pei, retrievalId, message.CorrelationId);
         }
-
-        ArgumentNullException.ThrowIfNull(payload);
-
-        var root = JsonNode.Parse(messagePayload)?.AsObject();
-        var resultNode = root?[PensionConstants.RetrievalResult];
-
-        var record = new RetrievedPensionRecord
+        catch (Exception error)
         {
-            Id = Guid.NewGuid().ToString(),
-            CorrelationId = message.CorrelationId,
-            Pei = payload.Pei,
-            AssetId = GetAssetId(resultNode),
-            Category = GetCategory(resultNode),
-            SchemeName = GetSchemeName(resultNode),
-            PensionType = GetPensionType(resultNode),
-            MatchType = GetMatchType(resultNode),
-            HasIncome = GetIncome(resultNode),
-            Administrator = GetAdministrator(resultNode),
-            PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
-            RetrievalResult = payload.RetrievalResult
-        };
-
-        return record;
+            logMessage = $"{InvalidPayloadResponse}: {error.Message}";
+            logger.LogCritical(error, logMessage);
+            return CreateFailedRetrievedPension(pei, retrievalId, message.CorrelationId);
+        }
     }
 
     private static string GetCategory(JsonNode? resultNode)
@@ -176,6 +185,40 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
 
         return currentNode?.ToJsonString().Trim('"') ?? defaultValue;
+    }
+
+    private static (string pei, string retrievalId) GetPayloadIds(string? messagePayload)
+    {
+        var resultNode = JsonNode.Parse(messagePayload!);
+        var pei = GetPayloadProperty(resultNode, PensionConstants.Pei, $"{Guid.NewGuid()}:{Guid.NewGuid()}");
+        var retrievalId = GetPayloadProperty(resultNode, PensionConstants.PensionRetrievalRecordId, $"{Guid.NewGuid()}");
+        return (pei, retrievalId);
+    }
+    private static string GetPayloadProperty(JsonNode? resultNode, string propertyName, string defaultValue)
+    {
+        var property = resultNode?[propertyName]?.GetValue<string>();
+        return string.IsNullOrWhiteSpace(property) ? defaultValue : property;
+    }
+
+    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string retrievalId, string correlationId)
+    {
+        var error = @"{""errorCode"": """ + PensionProviderConstants.RetrievalErrorCodes.SystemError + @"""}";
+
+        return new RetrievedPensionRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            Pei = pei,
+            PensionType = Constants.UnkonwnPensionType,
+            MatchType = Constants.UnkonwnMatchType,
+            AssetId = Guid.NewGuid().ToString(),
+            Category = Category.Error,
+            SchemeName = Constants.UnkonwnPensionScheme,
+            HasIncome = "false",
+            Administrator = Constants.UnkonwnAdministrator,
+            RetrievalResult = JsonSerializer.Deserialize<dynamic>(error),
+            CorrelationId = correlationId,
+            PensionsRetrievalRecordId = retrievalId,
+        };
     }
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)

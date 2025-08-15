@@ -7,9 +7,9 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RetrievedPensionsRecordFunction;
-using RetrievedPensionsRecordFunction.Models;
 using RetrievedPensionsRecordFunction.Repository;
 using RetrievedPensionsRecordFunctionTests.Data;
+using static MhpdCommon.ViewData.EvaluationConstants;
 
 namespace RetrievedPensionsRecordFunctionTests;
 
@@ -72,7 +72,7 @@ public class RetrievedPensionFunctionTests
     }
 
     [Fact]
-    public async Task Run_ShouldCallDeadLetterQueue_OnPayloadParseFail()
+    public async Task Run_ShouldSaveErrorRecord_OnPayloadParseFail()
     {
         ResetInvocations();
 
@@ -87,12 +87,12 @@ public class RetrievedPensionFunctionTests
         await _function.Run(message, _actionsMock.Object);
 
         // Assert
-        _actionsMock.Verify(r => r.DeadLetterMessageAsync(message, null,
-            It.Is<string>(arg => arg.StartsWith("Invalid retrieved pension payload")), null, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), 
+            It.Is<RetrievedPensionRecord>(rec => rec.Category == Category.Error)), Times.Once);
     }
 
     [Fact]
-    public async Task Run_ShouldCallDeadLetterQueue_OnPayloadValidateFail()
+    public async Task Run_ShouldSaveErrorRecord_OnPayloadValidateFail()
     {
         ResetInvocations();
 
@@ -110,8 +110,8 @@ public class RetrievedPensionFunctionTests
         await _function.Run(message, _actionsMock.Object);
 
         // Assert
-        _actionsMock.Verify(r => r.DeadLetterMessageAsync(message, null,
-            It.IsAny<string>(), null, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(),
+            It.Is<RetrievedPensionRecord>(rec => rec.Category == Category.Error)), Times.Once);
     }
 
     [Fact]
