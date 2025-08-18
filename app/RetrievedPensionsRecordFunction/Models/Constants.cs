@@ -3,8 +3,9 @@
 public static class Constants
 {
     public const string QueueLogSource = "Retrieved Pensions Message Queue";
-    public const string HttpGetLogSource = "Retrieved Pensions Http GET";
-    public const string HttpDeleteLogSource = "Retrieved Pensions Http DELETE";
+    public const string PeisGetLogSource = "Retrieved Peis GET";
+    public const string PensionsGetLogSource = "Retrieved Pensions GET";
+    public const string PensionsDeleteLogSource = "Retrieved Pensions DELETE";
     public const string InvalidRecordId = "pensionsRetrievalRecordId missing or invalid";
     public const string InvalidCorrelationId = "mhpdCorrelationId invalid";
     public const string InvalidQueryFilters = "Filtering by category requires a retrieval Id.";

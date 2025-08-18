@@ -21,9 +21,9 @@ namespace RetrievedPensionsRecordFunction
             Summary = "Get Retrieved Pension Records",
             Description = "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.")]
         [OpenApiParameter(
-            QueryParams.RetrievedPensions.RetrievalRecordId,
-            In = ParameterLocation.Query,
-            Description = "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            HeaderConstants.UserSessionId,
+            In = ParameterLocation.Header,
+            Description = "The id of the user session that the retrieved pension record is associated with.",
             Required = true)]
         [OpenApiParameter(
         HeaderConstants.CorrelationId,
@@ -35,7 +35,7 @@ namespace RetrievedPensionsRecordFunction
         [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
         public async Task<IActionResult> GetPeisAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-peis")] HttpRequest req)
         {
-            return await ProcessRetrievedRecordsAsync(req, Constants.HttpGetLogSource, id => repository.GetRetrievedPeisAsync(id));
+            return await ProcessRetrievedRecordsAsync(req, Constants.PeisGetLogSource, id => repository.GetRetrievedPeisAsync(id));
         }
 
         [Function("GetRetrievedRecords")]
@@ -43,10 +43,15 @@ namespace RetrievedPensionsRecordFunction
             Summary = "Get Retrieved Pension Records",
             Description = "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.")]
         [OpenApiParameter(
-            QueryParams.RetrievedPensions.RetrievalRecordId,
-            In = ParameterLocation.Query,
-            Description = "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            HeaderConstants.UserSessionId,
+            In = ParameterLocation.Header,
+            Description = "The id of the user session that the retrieved pension record is associated with.",
             Required = true)]
+        [OpenApiParameter(
+        HeaderConstants.CorrelationId,
+        In = ParameterLocation.Header,
+        Description = "An Id with which to group all logging statements made during a single session",
+        Required = false)]
         [OpenApiParameter(
             QueryParams.RetrievedPensions.PensionCategory,
             In = ParameterLocation.Query,
@@ -57,11 +62,6 @@ namespace RetrievedPensionsRecordFunction
             In = ParameterLocation.Query,
             Description = "Gets a specific pensions retrieval record with the specified Id.",
             Required = false)]
-        [OpenApiParameter(
-        HeaderConstants.CorrelationId,
-        In = ParameterLocation.Header,
-        Description = "An Id with which to group all logging statements made during a single session",
-        Required = false)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string),
             Description = "The array of Retrieved Pension Records that match the provided query parameters")]
         [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
@@ -70,7 +70,7 @@ namespace RetrievedPensionsRecordFunction
             var category = req.Query[QueryParams.RetrievedPensions.PensionCategory];
             var assetId = req.Query[QueryParams.RetrievedPensions.AssetId];
 
-            return await ProcessRetrievedRecordsAsync(req, Constants.HttpGetLogSource, id => repository.GetRetrievedRecordsAsync(id, category, assetId));
+            return await ProcessRetrievedRecordsAsync(req, Constants.PensionsGetLogSource, id => repository.GetRetrievedRecordsAsync(id, category, assetId));
         }
 
         [Function("DeleteRetrievedRecords")]
@@ -78,9 +78,9 @@ namespace RetrievedPensionsRecordFunction
             Summary = "Delete Pensions Retrieved Record",
             Description = "Deletes the given pension retrieved record id.")]
         [OpenApiParameter(
-            QueryParams.RetrievedPensions.RetrievalRecordId,
-            In = ParameterLocation.Query,
-            Description = "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            HeaderConstants.UserSessionId,
+            In = ParameterLocation.Header,
+            Description = "The id of the user session that the retrieved pension record is associated with.",
             Required = true)]
         [OpenApiParameter(
         HeaderConstants.CorrelationId,
@@ -91,7 +91,7 @@ namespace RetrievedPensionsRecordFunction
             Description = "The number of records deleted as part of the request")]
         public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "retrieved-pension-records")] HttpRequest req)
         {
-            return await ProcessRetrievedRecordsAsync(req, Constants.HttpDeleteLogSource, repository.DeleteRetrievedRecordsAsync);
+            return await ProcessRetrievedRecordsAsync(req, Constants.PensionsDeleteLogSource, repository.DeleteRetrievedRecordsAsync);
         }
 
         private async Task<IActionResult> ProcessRetrievedRecordsAsync<T>(HttpRequest req, string logSource, Func<string, Task<T>> processor)
@@ -110,17 +110,17 @@ namespace RetrievedPensionsRecordFunction
 
             using var scope = logger.BeginCorrelationScope(correlationId, logSource);
 
-            var pensionsRetrievalRecordId = req.Query[QueryParams.RetrievedPensions.RetrievalRecordId].ToString();
+            var userSessionId = req.Headers[HeaderConstants.UserSessionId].ToString();
 
-            logger.LogRequest($"Pension retrieval record Id: {pensionsRetrievalRecordId}");
+            logger.LogRequest($"User Session Id: {userSessionId}");
 
-            if (!validator.IsValidGuid(pensionsRetrievalRecordId))
+            if (!validator.IsValidGuid(userSessionId))
             {
-                logger.LogError("Unable to service request for pensionsRetrievalRecordId [{RetrievalId}]: {Reason}", pensionsRetrievalRecordId, Constants.InvalidRecordId);
+                logger.LogError("Unable to service request for session [{SessionId}]: {Reason}", userSessionId, Constants.InvalidRecordId);
                 return new BadRequestObjectResult(Constants.InvalidRecordId);
             }
 
-            var records = await processor(pensionsRetrievalRecordId);
+            var records = await processor(userSessionId);
 
             logger.LogResponse(records);
 

@@ -41,23 +41,27 @@ public class RetrievedRecordsFunctionTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Function_ShouldReturnOk_WhenHeadersAreValid(bool withHeader)
+    public async Task Function_ShouldReturnOk_WhenHeadersAreValid(bool withCorrelationId)
     {
         //Arrange
-        var retrievalRecordId = Guid.NewGuid().ToString();
+        var userSessionId = Guid.NewGuid().ToString();
         var category = "Contact";
         var assetId = "1ba03e25-659a-43b8-ae77-b956df168969";
         var queryParams = new Dictionary<string, StringValues>
         {
-            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId},
             { QueryParams.RetrievedPensions.PensionCategory, category },
             { QueryParams.RetrievedPensions.AssetId, assetId }
         };
 
-        var headers = new Dictionary<string, StringValues>();
-        if (withHeader)
+        var headers = new Dictionary<string, StringValues>
+        {
+            { HeaderConstants.UserSessionId, userSessionId }
+        };
+
+        if (withCorrelationId)
         {
             headers.Add(HeaderConstants.CorrelationId, Guid.NewGuid().ToString());
+            
         }
 
         var mockRequest = new Mock<HttpRequest>();
@@ -71,26 +75,26 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<List<RetrievedPensionRecord>>(result.Value);
-        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(retrievalRecordId, category, assetId), Times.Once);
+        _repository.Verify(mock => mock.GetRetrievedRecordsAsync(userSessionId, category, assetId), Times.Once);
     }
 
     [Fact]
     public async Task GetPeis_ShouldReturnOk_WhenHeadersAreValid()
     {
         //Arrange
-        var retrievalRecordId = Guid.NewGuid().ToString();
+        var userSessionId = Guid.NewGuid().ToString();
         var category = "Contact";
         var assetId = "1ba03e25-659a-43b8-ae77-b956df168969";
         var queryParams = new Dictionary<string, StringValues>
         {
-            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId},
             { QueryParams.RetrievedPensions.PensionCategory, category },
             { QueryParams.RetrievedPensions.AssetId, assetId }
         };
 
         var headers = new Dictionary<string, StringValues>
         {
-            { HeaderConstants.CorrelationId, Guid.NewGuid().ToString() }
+            { HeaderConstants.CorrelationId, Guid.NewGuid().ToString() },
+            { HeaderConstants.UserSessionId, userSessionId }
         };
 
         var mockRequest = new Mock<HttpRequest>();
@@ -104,7 +108,7 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<List<string>>(result.Value);
-        _repository.Verify(mock => mock.GetRetrievedPeisAsync(retrievalRecordId), Times.Once);
+        _repository.Verify(mock => mock.GetRetrievedPeisAsync(userSessionId), Times.Once);
     }
 
     [Fact]
@@ -119,10 +123,9 @@ public class RetrievedRecordsFunctionTest
         
         var headers = new Dictionary<string, StringValues>
         {
-            { HeaderConstants.CorrelationId, correlationId}
+            { HeaderConstants.CorrelationId, correlationId},
+            { HeaderConstants.UserSessionId, Guid.NewGuid().ToString() }
         };
-
-        queryParams.Add(QueryParams.RetrievedPensions.RetrievalRecordId, Guid.NewGuid().ToString());
 
         var queries = new QueryCollection(queryParams);
         var mockRequest = new Mock<HttpRequest>();
@@ -147,12 +150,13 @@ public class RetrievedRecordsFunctionTest
 
         var queryParams = new Dictionary<string, StringValues>
         {
-            { QueryParams.RetrievedPensions.RetrievalRecordId, Guid.NewGuid().ToString() }
+            { QueryParams.RetrievedPensions.AssetId, Guid.NewGuid().ToString() }
         };
 
         var headers = new Dictionary<string, StringValues>
         {
-            { HeaderConstants.CorrelationId, "Guid.NewGuid().ToString()"}
+            { HeaderConstants.CorrelationId, "Guid.NewGuid().ToString()"},
+            { HeaderConstants.UserSessionId, "Guid.NewGuid().ToString()" }
         };
 
         var mockRequest = new Mock<HttpRequest>();
@@ -172,23 +176,22 @@ public class RetrievedRecordsFunctionTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Delete_ShouldReturnOk_WhenPayloadIsValid(bool withHeader)
+    public async Task Delete_ShouldReturnOk_WhenPayloadIsValid(bool withCorrelationId)
     {
         //Arrange
-        var retrievalRecordId = Guid.NewGuid().ToString();
-        var queryParams = new Dictionary<string, StringValues>
+        var userSessionId = Guid.NewGuid().ToString();
+        var headers = new Dictionary<string, StringValues>
         {
-            { QueryParams.RetrievedPensions.RetrievalRecordId, retrievalRecordId}
+            { HeaderConstants.UserSessionId, userSessionId }
         };
 
-        var headers = new Dictionary<string, StringValues>();
-        if (withHeader)
+        if (withCorrelationId)
         {
             headers.Add(HeaderConstants.CorrelationId, Guid.NewGuid().ToString());
+            
         }
 
         var mockRequest = new Mock<HttpRequest>();
-        mockRequest.Setup(req => req.Query).Returns(new QueryCollection(queryParams));
         mockRequest.Setup(req => req.Headers).Returns(new HeaderDictionary(headers));
 
         //Act
@@ -198,6 +201,6 @@ public class RetrievedRecordsFunctionTest
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<int>(result.Value);
-        _repository.Verify(mock => mock.DeleteRetrievedRecordsAsync(retrievalRecordId), Times.Once);
+        _repository.Verify(mock => mock.DeleteRetrievedRecordsAsync(userSessionId), Times.Once);
     }
 }

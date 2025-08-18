@@ -13,20 +13,20 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 {
     private readonly CosmosBusinessConfiguration _configuration = config.Value;
 
-    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId, string? category = null, string? assetId = null)
+    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
         var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId, category, assetId);
+        using var iterator = GetRetrievedRecords(container, userSessionId, category, assetId);
 
         var response = await iterator.ReadNextAsync();
 
         return [.. response];
     }
 
-    public async Task<List<string>> GetRetrievedPeisAsync(string pensionsRetrievalRecordId)
+    public async Task<List<string>> GetRetrievedPeisAsync(string userSessionId)
     {
         var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
+        using var iterator = GetRetrievedRecords(container, userSessionId);
 
         var response = await iterator.ReadNextAsync();
 
@@ -64,10 +64,10 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         return false;
     }
 
-    public async Task<int> DeleteRetrievedRecordsAsync(string pensionsRetrievalRecordId)
+    public async Task<int> DeleteRetrievedRecordsAsync(string userSessionId)
     {
         var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
+        using var iterator = GetRetrievedRecords(container, userSessionId);
 
         var response = await iterator.ReadNextAsync();
 
@@ -79,15 +79,15 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         return response.Count;
     }
 
-    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string pensionsRetrievalRecordId, string? category = null, string? assetId = null)
+    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string userSessionId, string? category = null, string? assetId = null)
     {
         var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
         var parameters = new Dictionary<string, string>();
 
-        if (!string.IsNullOrWhiteSpace(pensionsRetrievalRecordId))
+        if (!string.IsNullOrWhiteSpace(userSessionId))
         {
-            queryBuilder.Append(" AND c.pensionsRetrievalRecordId = @retrievalId");
-            parameters["@retrievalId"] = pensionsRetrievalRecordId;
+            queryBuilder.Append(" AND c.userSessionId = @sessionId");
+            parameters["@sessionId"] = userSessionId;
         }
 
         if (!string.IsNullOrWhiteSpace(category))

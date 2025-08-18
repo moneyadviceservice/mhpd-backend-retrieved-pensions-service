@@ -96,7 +96,8 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
                 MatchType = GetMatchType(resultNode),
                 HasIncome = GetIncome(resultNode),
                 Administrator = GetAdministrator(resultNode),
-                RetrievalResult = payload.RetrievalResult
+                RetrievalResult = payload.RetrievalResult,
+                UserSessionId = payload.UserSessionId
             };
 
             return record;
