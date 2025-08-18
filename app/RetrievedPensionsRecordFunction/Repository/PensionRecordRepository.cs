@@ -11,24 +11,18 @@ namespace RetrievedPensionsRecordFunction.Repository;
 public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosBusinessConfiguration> config, ILogger<PensionRecordRepository> logger) 
     : IPensionRecordRepository
 {
-    private readonly CosmosBusinessConfiguration _configuration = config.Value;
+    private readonly Container _container = cosmosClient.GetContainer(config.Value.DatabaseId, config.Value.RetrievedPensionsContainer);
 
     public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
-        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, userSessionId, category, assetId);
-
-        var response = await iterator.ReadNextAsync();
+        var response = await GetRecordsAsync(userSessionId);
 
         return [.. response];
     }
 
     public async Task<List<string>> GetRetrievedPeisAsync(string userSessionId)
     {
-        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, userSessionId);
-
-        var response = await iterator.ReadNextAsync();
+        var response = await GetRecordsAsync(userSessionId);
 
         return [.. response.Select(record => record.Pei!)];
     }
@@ -43,9 +37,7 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
             return false;
         }
 
-        Container container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-
-        var response = await container.UpsertItemAsync(record, new PartitionKey(record.PensionsRetrievalRecordId), null, default);
+        var response = await _container.UpsertItemAsync(record, new PartitionKey(record.PensionsRetrievalRecordId), null, default);
 
         string? logMessage;
 
@@ -66,20 +58,17 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 
     public async Task<int> DeleteRetrievedRecordsAsync(string userSessionId)
     {
-        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, userSessionId);
-
-        var response = await iterator.ReadNextAsync();
+        var response = await GetRecordsAsync(userSessionId);
 
         foreach (var record in response)
         {
-            await container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.PensionsRetrievalRecordId));
+            await _container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.PensionsRetrievalRecordId));
         }
 
         return response.Count;
     }
 
-    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string userSessionId, string? category = null, string? assetId = null)
+    private Task<FeedResponse<RetrievedPensionRecord>> GetRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
         var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
         var parameters = new Dictionary<string, string>();
@@ -109,12 +98,14 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
             queryDefinition.WithParameter(param.Key, param.Value);
         }
 
-        return container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition);
+        var iterator = _container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition);
+
+        return iterator.ReadNextAsync();
     }
 
     private void LogDatabaseInfo()
     {
-        var connDetails = $"Accessing Cosmos DB container: [{_configuration.RetrievedPensionsContainer}] in the database [{_configuration.DatabaseId}]";
+        var connDetails = $"Accessing Cosmos DB container: [{_container.Id}] in the database [{_container.Database}]";
 
         logger.LogInformation(connDetails);
     }
