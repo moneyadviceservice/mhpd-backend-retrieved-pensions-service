@@ -47,9 +47,9 @@
         "operationId": "get-retrieved-peis",
         "parameters": [
           {
-            "name": "pensionsRetrievalRecordId",
-            "in": "query",
-            "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
             "required": true,
             "schema": {
               "type": "string"
@@ -88,10 +88,18 @@
         "operationId": "get-retrieved-pensions-records",
         "parameters": [
           {
-            "name": "pensionsRetrievalRecordId",
-            "in": "query",
-            "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mhpdCorrelationId",
+            "in": "header",
+            "description": "An Id with which to group all logging statements made during a single session",
             "schema": {
               "type": "string"
             }
@@ -108,14 +116,6 @@
             "name": "assetId",
             "in": "query",
             "description": "Gets a specific pensions retrieval record with the specified Id.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "mhpdCorrelationId",
-            "in": "header",
-            "description": "An Id with which to group all logging statements made during a single session",
             "schema": {
               "type": "string"
             }
@@ -143,9 +143,9 @@
         "operationId": "delete-pensions-retrieved-records-id",
         "parameters": [
           {
-            "name": "pensionsRetrievalRecordId",
-            "in": "query",
-            "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
             "required": true,
             "schema": {
               "type": "string"
