@@ -6,7 +6,7 @@ public static class Constants
     public const string PeisGetLogSource = "Retrieved Peis GET";
     public const string PensionsGetLogSource = "Retrieved Pensions GET";
     public const string PensionsDeleteLogSource = "Retrieved Pensions DELETE";
-    public const string InvalidRecordId = "pensionsRetrievalRecordId missing or invalid";
+    public const string InvalidSessionId = "userSessionId missing or invalid";
     public const string InvalidCorrelationId = "mhpdCorrelationId invalid";
     public const string InvalidQueryFilters = "Filtering by category requires a retrieval Id.";
     public const string MissingQueryFilters = "At least one of sessionId or externalAssetId must be provided.";

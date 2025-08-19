@@ -116,8 +116,8 @@ namespace RetrievedPensionsRecordFunction
 
             if (!validator.IsValidGuid(userSessionId))
             {
-                logger.LogError("Unable to service request for session [{SessionId}]: {Reason}", userSessionId, Constants.InvalidRecordId);
-                return new BadRequestObjectResult(Constants.InvalidRecordId);
+                logger.LogError("Unable to service request for session [{SessionId}]: {Reason}", userSessionId, Constants.InvalidSessionId);
+                return new BadRequestObjectResult(Constants.InvalidSessionId);
             }
 
             var records = await processor(userSessionId);

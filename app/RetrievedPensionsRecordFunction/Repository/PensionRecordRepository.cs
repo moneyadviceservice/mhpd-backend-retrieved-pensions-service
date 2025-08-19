@@ -15,7 +15,7 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 
     public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
-        var response = await GetRecordsAsync(userSessionId);
+        var response = await GetRecordsAsync(userSessionId, category, assetId);
 
         return [.. response];
     }

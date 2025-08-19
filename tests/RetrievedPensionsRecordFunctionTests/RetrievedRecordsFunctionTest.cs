@@ -138,7 +138,7 @@ public class RetrievedRecordsFunctionTest
         //Assert
         var result = Assert.IsType<BadRequestObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
-        Assert.Equal(Constants.InvalidRecordId, result.Value);
+        Assert.Equal(Constants.InvalidSessionId, result.Value);
         _repository.Verify(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
