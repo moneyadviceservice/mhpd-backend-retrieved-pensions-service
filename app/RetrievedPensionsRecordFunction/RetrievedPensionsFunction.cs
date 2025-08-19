@@ -71,7 +71,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         var messageBody = Encoding.UTF8.GetString(message.Body);
         string? logMessage;
         RetrievedPensionDetailsPayload? payload;
-        var (pei, retrievalId) = GetPayloadIds(messageBody);
+        var (pei, retrievalId, userSessionId) = GetPayloadIds(messageBody);
 
         try
         {
@@ -88,6 +88,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
                 Id = Guid.NewGuid().ToString(),
                 CorrelationId = message.CorrelationId,
                 Pei = pei,
+                UserSessionId = userSessionId,
                 PensionsRetrievalRecordId = retrievalId,
                 AssetId = GetAssetId(resultNode),
                 Category = GetCategory(resultNode),
@@ -97,7 +98,6 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
                 HasIncome = GetIncome(resultNode),
                 Administrator = GetAdministrator(resultNode),
                 RetrievalResult = payload.RetrievalResult,
-                UserSessionId = payload.UserSessionId
             };
 
             return record;
@@ -114,13 +114,13 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             logMessage = builder.ToString();
             logger.LogCritical(error, logMessage);
 
-            return CreateFailedRetrievedPension(pei, retrievalId, message.CorrelationId);
+            return CreateFailedRetrievedPension(pei, retrievalId, userSessionId, message.CorrelationId);
         }
         catch (Exception error)
         {
             logMessage = $"{InvalidPayloadResponse}: {error.Message}";
             logger.LogCritical(error, logMessage);
-            return CreateFailedRetrievedPension(pei, retrievalId, message.CorrelationId);
+            return CreateFailedRetrievedPension(pei, retrievalId, userSessionId, message.CorrelationId);
         }
     }
 
@@ -188,12 +188,13 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return currentNode?.ToJsonString().Trim('"') ?? defaultValue;
     }
 
-    private static (string pei, string retrievalId) GetPayloadIds(string? messagePayload)
+    private static (string pei, string retrievalId, string userSessionId) GetPayloadIds(string? messagePayload)
     {
         var resultNode = JsonNode.Parse(messagePayload!);
         var pei = GetPayloadProperty(resultNode, PensionConstants.Pei, $"{Guid.NewGuid()}:{Guid.NewGuid()}");
         var retrievalId = GetPayloadProperty(resultNode, PensionConstants.PensionRetrievalRecordId, $"{Guid.NewGuid()}");
-        return (pei, retrievalId);
+        var userSessionId = GetPayloadProperty(resultNode, PensionConstants.UserSessionId, $"{Guid.NewGuid()}");
+        return (pei, retrievalId, userSessionId);
     }
     private static string GetPayloadProperty(JsonNode? resultNode, string propertyName, string defaultValue)
     {
@@ -201,7 +202,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return string.IsNullOrWhiteSpace(property) ? defaultValue : property;
     }
 
-    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string retrievalId, string correlationId)
+    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string retrievalId, string userSessionId, string correlationId)
     {
         var error = @"{""errorCode"": """ + PensionProviderConstants.RetrievalErrorCodes.SystemError + @"""}";
 
@@ -209,6 +210,9 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         {
             Id = Guid.NewGuid().ToString(),
             Pei = pei,
+            CorrelationId = correlationId,
+            PensionsRetrievalRecordId = retrievalId,
+            UserSessionId = userSessionId,
             PensionType = Constants.UnkonwnPensionType,
             MatchType = Constants.UnkonwnMatchType,
             AssetId = Guid.NewGuid().ToString(),
@@ -216,9 +220,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             SchemeName = Constants.UnkonwnPensionScheme,
             HasIncome = "false",
             Administrator = Constants.UnkonwnAdministrator,
-            RetrievalResult = JsonSerializer.Deserialize<dynamic>(error),
-            CorrelationId = correlationId,
-            PensionsRetrievalRecordId = retrievalId,
+            RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
         };
     }
 
