@@ -1,5 +1,6 @@
 {
   "pensionRetrievalRecordId": "c63dde01-f775-49e1-9107-30680fbbb1d7",
+  "userSessionId": "c63dde01-f775-49e1-9107-30680fbbb1d7",
   "pei": "ca6f57a9-51de-4e9f-9a5a-d3fddcccd029:d80df6ec-1c02-4a8d-8e72-ceb2dae9b6e4",
   "retrievalResult": {
     "errorCode": "SYSTEM_ERROR"
