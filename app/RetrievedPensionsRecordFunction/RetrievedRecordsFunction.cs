@@ -34,7 +34,7 @@ namespace RetrievedPensionsRecordFunction
         [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
         public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-pension-records")] HttpRequest req)
         {
-            return await ProcessRetrievedRecordsAsync(req, repository.GetRetrievedRecordsAsync);
+            return await ProcessRetrievedRecordsAsync(req, "GET", repository.GetRetrievedRecordsAsync);
         }
 
         [Function("DeleteRetrievedRecords")]
@@ -55,10 +55,10 @@ namespace RetrievedPensionsRecordFunction
             Description = "The number of records deleted as part of the request")]
         public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "retrieved-pension-records")] HttpRequest req)
         {
-            return await ProcessRetrievedRecordsAsync(req, repository.DeleteRetrievedRecordsAsync);
+            return await ProcessRetrievedRecordsAsync(req, "DELETE", repository.DeleteRetrievedRecordsAsync);
         }
 
-        private async Task<IActionResult> ProcessRetrievedRecordsAsync<T>(HttpRequest req, Func<string, Task<T>> processor)
+        private async Task<IActionResult> ProcessRetrievedRecordsAsync<T>(HttpRequest req, string source, Func<string, Task<T>> processor)
         {
             var correlationId = req.Headers[HeaderConstants.CorrelationId].ToString();
 
@@ -76,17 +76,17 @@ namespace RetrievedPensionsRecordFunction
 
             var pensionsRetrievalRecordId = req.Query[Constants.RetrievedRecordQuery].ToString();
 
-            logger.LogRequest($"Pension retrieval record Id: {pensionsRetrievalRecordId}");
+            logger.LogRequestReceived($"{source} for Pension retrieval record Id: {pensionsRetrievalRecordId}");
 
             if (!validator.IsValidGuid(pensionsRetrievalRecordId))
             {
-                logger.LogError("Unable to service request for pensionsRetrievalRecordId [{retrievalId}]: {reason}", pensionsRetrievalRecordId, Constants.InvalidRecordId);
+                logger.LogError("Unable to service request for pensionsRetrievalRecordId [{RetrievalId}]: {Reason}", pensionsRetrievalRecordId, Constants.InvalidRecordId);
                 return new BadRequestObjectResult(Constants.InvalidRecordId);
             }
 
             var records = await processor(pensionsRetrievalRecordId);
 
-            logger.LogResponse(records);
+            logger.LogResponseSent(records);
 
             return new OkObjectResult(records);
         }
