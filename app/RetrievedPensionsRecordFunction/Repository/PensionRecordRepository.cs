@@ -1,89 +1,111 @@
-﻿using MhpdCommon.Models.MessageBodyModels;
+﻿using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
-using MhpdCommon.Models.Configuration;
+using System.Text;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
 public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosBusinessConfiguration> config, ILogger<PensionRecordRepository> logger) 
     : IPensionRecordRepository
 {
-    private readonly CosmosBusinessConfiguration _configuration = config.Value;
+    private readonly Container _container = cosmosClient.GetContainer(config.Value.DatabaseId, config.Value.RetrievedPensionsContainer);
 
-    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId)
+    public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
-        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
-
-        var response = await iterator.ReadNextAsync();
+        var response = await GetRecordsAsync(userSessionId, category, assetId);
 
         return [.. response];
     }
 
-    public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionDetailsPayload payload)
+    public async Task<List<string>> GetRetrievedPeisAsync(string userSessionId)
+    {
+        var response = await GetRecordsAsync(userSessionId);
+
+        return [.. response.Select(record => record.Pei!)];
+    }
+
+    public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionRecord record)
     {
         LogDatabaseInfo();
-        if(string.IsNullOrWhiteSpace(correlationId)) return false;
 
-        var record = new RetrievedPensionRecord
+        if (string.IsNullOrWhiteSpace(correlationId))
         {
-            Id = Guid.NewGuid().ToString(),
-            CorrelationId = correlationId,
-            Pei = payload.Pei,
-            PensionsRetrievalRecordId = payload.PensionRetrievalRecordId,
-            RetrievalResult = payload.RetrievalResult
-        };
+            logger.LogError("Correlation Id is null.");
+            return false;
+        }
 
-        Container container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-
-        var response = await container.UpsertItemAsync(record, new PartitionKey(record.PensionsRetrievalRecordId), null, default);
+        var response = await _container.UpsertItemAsync(record, new PartitionKey(record.PensionsRetrievalRecordId), null, default);
 
         string? logMessage;
 
         if (response.StatusCode == HttpStatusCode.OK ||
             response.StatusCode == HttpStatusCode.Created)
         {
-            logMessage = $"Retrieved pension record for PEI: {payload.Pei} " +
+            logMessage = $"Retrieved pension record for PEI: {record.Pei} " +
                 $"{(response.StatusCode == HttpStatusCode.Created ? "created" : "updated")}.";
 
             logger.LogWarning(logMessage);
             return true;
         }
 
-        logMessage = $"Unable to save a record for pension with PEI: {payload.Pei}";
+        logMessage = $"Unable to save a record for pension with PEI: {record.Pei}";
         logger.LogCritical(logMessage);
         return false;
     }
 
-    public async Task<int> DeleteRetrievedRecordsAsync(string pensionsRetrievalRecordId)
+    public async Task<int> DeleteRetrievedRecordsAsync(string userSessionId)
     {
-        var container = cosmosClient.GetContainer(_configuration.DatabaseId, _configuration.RetrievedPensionsContainer);
-        using var iterator = GetRetrievedRecords(container, pensionsRetrievalRecordId);
-
-        var response = await iterator.ReadNextAsync();
+        var response = await GetRecordsAsync(userSessionId);
 
         foreach (var record in response)
         {
-            await container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.PensionsRetrievalRecordId));
+            await _container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.PensionsRetrievalRecordId));
         }
 
         return response.Count;
     }
 
-    private static FeedIterator<RetrievedPensionRecord> GetRetrievedRecords(Container container, string pensionsRetrievalRecordId)
+    private Task<FeedResponse<RetrievedPensionRecord>> GetRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
-        var query = new QueryDefinition("SELECT * FROM c WHERE c.pensionsRetrievalRecordId = @retrievalId")
-                .WithParameter("@retrievalId", pensionsRetrievalRecordId);
+        var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
+        var parameters = new Dictionary<string, string>();
 
-        return container.GetItemQueryIterator<RetrievedPensionRecord>(query);
+        if (!string.IsNullOrWhiteSpace(userSessionId))
+        {
+            queryBuilder.Append(" AND c.userSessionId = @sessionId");
+            parameters["@sessionId"] = userSessionId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            queryBuilder.Append(" AND c.category = @category");
+            parameters["@category"] = category;
+        }
+
+        if (!string.IsNullOrWhiteSpace(assetId))
+        {
+            queryBuilder.Append(" AND c.assetId = @assetId");
+            parameters["@assetId"] = assetId;
+        }
+
+        var queryDefinition = new QueryDefinition(queryBuilder.ToString());
+
+        foreach (var param in parameters)
+        {
+            queryDefinition.WithParameter(param.Key, param.Value);
+        }
+
+        var iterator = _container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition);
+
+        return iterator.ReadNextAsync();
     }
 
     private void LogDatabaseInfo()
     {
-        var connDetails = $"Accessing Cosmos DB container: [{_configuration.RetrievedPensionsContainer}] in the database [{_configuration.DatabaseId}]";
+        var connDetails = $"Accessing Cosmos DB container: [{_container.Id}] in the database [{_container.Database}]";
 
         logger.LogInformation(connDetails);
     }

@@ -3,8 +3,15 @@
 public static class Constants
 {
     public const string QueueLogSource = "Retrieved Pensions Message Queue";
-    public const string HttpLogSource = "Retrieved Pensions Http GET";
-    public const string RetrievedRecordQuery = "pensionsRetrievalRecordId";
-    public const string InvalidRecordId = "pensionsRetrievalRecordId missing or invalid";
+    public const string PeisGetLogSource = "Retrieved Peis GET";
+    public const string PensionsGetLogSource = "Retrieved Pensions GET";
+    public const string PensionsDeleteLogSource = "Retrieved Pensions DELETE";
+    public const string InvalidSessionId = "userSessionId missing or invalid";
     public const string InvalidCorrelationId = "mhpdCorrelationId invalid";
+    public const string InvalidQueryFilters = "Filtering by category requires a retrieval Id.";
+    public const string MissingQueryFilters = "At least one of sessionId or externalAssetId must be provided.";
+    public const string UnkonwnPensionScheme = "Unknown Pension Scheme";
+    public const string UnkonwnPensionType = "Unknown Pension Type";
+    public const string UnkonwnMatchType = "Unknown Match Type";
+    public const string UnkonwnAdministrator = "Unknown Pension Administrator";
 }

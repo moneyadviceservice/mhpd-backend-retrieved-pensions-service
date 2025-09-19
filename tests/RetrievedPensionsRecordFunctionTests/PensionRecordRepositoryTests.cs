@@ -1,11 +1,11 @@
 ﻿using MhpdCommon.Models.Configuration;
-using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using RetrievedPensionsRecordFunction.Repository;
+using RetrievedPensionsRecordFunctionTests.Data;
 using System.Net;
 
 namespace RetrievedPensionsRecordFunctionTests;
@@ -48,7 +48,7 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    private async Task WhenNewPayloadIsProvided_NewRecordIsSaved()
+    public async Task WhenNewPayloadIsProvided_NewRecordIsSaved()
     {
         //Arrange
         var payload = GetPayload();
@@ -62,7 +62,7 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    private async Task WhenNoCorrelationIdIsProvided_NewRecordIsNotSaved()
+    public async Task WhenNoCorrelationIdIsProvided_NewRecordIsNotSaved()
     {
         //Arrange
         var payload = GetPayload();
@@ -75,7 +75,7 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    private async Task WhenExistingPayloadIsProvided_RecordIsUpdated()
+    public async Task WhenExistingPayloadIsProvided_RecordIsUpdated()
     {
         //Arrange
         var payload = GetPayload();
@@ -89,7 +89,7 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    private async Task WhenClientDoesNotSave_ResponseReturnsFalse()
+    public async Task WhenClientDoesNotSave_ResponseReturnsFalse()
     {
         //Arrange
         var payload = GetPayload();
@@ -114,10 +114,33 @@ public  class PensionRecordRepositoryTests
         _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
 
         //Act
-        var result = await _repository.GetRetrievedRecordsAsync(Guid.NewGuid().ToString());
+        var result = await _repository.GetRetrievedRecordsAsync("sessionId", "CONFIRMED", "assetId");
 
         //Assert
         Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task WhenPeiIsRequested_DatabaseResultIsCorrect()
+    {
+        //Arrange
+        List<RetrievedPensionRecord> records = [
+            new RetrievedPensionRecord{ Pei = "A"},
+            new RetrievedPensionRecord{ Pei = "B"},
+            new RetrievedPensionRecord{ Pei = "C"}
+        ];
+
+        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
+        _readResponse.Setup(mock => mock.Count).Returns(records.Count);
+
+        //Act
+        var result = await _repository.GetRetrievedPeisAsync(Guid.NewGuid().ToString());
+
+        //Assert
+        Assert.Equal(records.Count, result.Count);
+        Assert.Contains("A", result);
+        Assert.Contains("B", result);
+        Assert.Contains("C", result);
     }
 
     [Fact]
@@ -140,12 +163,12 @@ public  class PensionRecordRepositoryTests
         Assert.Equal(records.Count, result);
     }
 
-    private static RetrievedPensionDetailsPayload GetPayload()
+    private static RetrievedPensionRecord GetPayload()
     {
-        return new RetrievedPensionDetailsPayload
+        return new RetrievedPensionRecord
         {
             Pei = "pei",
-            PensionRetrievalRecordId = "recordId",
+            PensionsRetrievalRecordId = "recordId",
             RetrievalResult = Array.Empty<List<PensionArrangement>>()
         };
     }

@@ -1,13 +1,14 @@
-﻿using MhpdCommon.Models.MessageBodyModels;
-using MhpdCommon.Models.MHPDModels;
+﻿using MhpdCommon.Models.MHPDModels;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
 public interface IPensionRecordRepository
 {
-    Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionDetailsPayload payload);
+    Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionRecord record);
 
-    Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string pensionsRetrievalRecordId);
+    Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null);
 
-    Task<int> DeleteRetrievedRecordsAsync(string pensionsRetrievalRecordId);
+    Task<List<string>> GetRetrievedPeisAsync(string userSessionId);
+
+    Task<int> DeleteRetrievedRecordsAsync(string userSessionId);
 }

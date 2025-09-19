@@ -8,7 +8,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
 using RetrievedPensionsRecordFunction.Repository;
-using RetrievedPensionsRecordFunction.Utils;
 
 var host = new HostBuilder()
     .ConfigureOpenApi()
@@ -24,7 +23,7 @@ var host = new HostBuilder()
         services.AddMhpdCosmosDb(hostContext.Configuration);
         services.AddMhpdUtilities(hostContext.Configuration);
         services.AddMhpdServiceBusTools();
-        services.AddScoped<IPensionRecordValidator, PensionRecordValidator>();
+        services.AddTransformServices();
         services.AddScoped<IPensionRecordRepository, PensionRecordRepository>();
         services.AddSingleton<IOpenApiConfigurationOptions>(_ =>
         {

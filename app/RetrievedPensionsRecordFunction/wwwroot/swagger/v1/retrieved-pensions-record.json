@@ -40,16 +40,16 @@
         }
       }
     },
-    "/retrieved-pension-records": {
+    "/retrieved-peis": {
       "get": {
         "summary": "Get Retrieved Pension Records",
         "description": "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.",
-        "operationId": "get-retrieved-pensions-records",
+        "operationId": "get-retrieved-peis",
         "parameters": [
           {
-            "name": "pensionsRetrievalRecordId",
-            "in": "query",
-            "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
             "required": true,
             "schema": {
               "type": "string"
@@ -59,6 +59,63 @@
             "name": "mhpdCorrelationId",
             "in": "header",
             "description": "An Id with which to group all logging statements made during a single session",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The array of Retrieved Peis that match the provided query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest"
+          }
+        }
+      }
+    },
+    "/retrieved-pension-records": {
+      "get": {
+        "summary": "Get Retrieved Pension Records",
+        "description": "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.",
+        "operationId": "get-retrieved-pensions-records",
+        "parameters": [
+          {
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mhpdCorrelationId",
+            "in": "header",
+            "description": "An Id with which to group all logging statements made during a single session",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Gets a subset of the pensions retrieval records that have the specified classification.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "query",
+            "description": "Gets a specific pensions retrieval record with the specified Id.",
             "schema": {
               "type": "string"
             }
@@ -86,9 +143,9 @@
         "operationId": "delete-pensions-retrieved-records-id",
         "parameters": [
           {
-            "name": "pensionsRetrievalRecordId",
-            "in": "query",
-            "description": "The id of the pensions retrieval record that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The id of the user session that the retrieved pension record is associated with.",
             "required": true,
             "schema": {
               "type": "string"

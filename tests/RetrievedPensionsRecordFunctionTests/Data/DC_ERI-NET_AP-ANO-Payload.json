@@ -1,0 +1,72 @@
+{
+  "pensionRetrievalRecordId": "77b73245-98be-4f4e-886a-3f6ee7f8ff06",
+    "userSessionId": "77b73245-98be-4f4e-886a-3f6ee7f8ff06",
+    "pei": "ca6f57a9-51de-4e9f-9a5a-d3fddcccd029:9f1bfd4a-4e39-4c59-bac5-c6860250f962",
+    "retrievalResult": [
+        {
+            "externalAssetId": "9f1bfd4a-4e39-4c59-bac5-c6860250f962",
+            "schemeName": "Scheme Name",
+            "matchType": "DEFN",
+            "pensionType": "DC",
+            "pensionCategory": "PENDING",
+            "benefitIllustrations": [
+                {
+                    "illustrationDate": "2024-01-01",
+                    "illustrationComponents": [
+                        {
+                            "illustrationType": "ERI",
+                            "survivorBenefit": false,
+                            "safeguardedBenefit": false,
+                            "benefitType": "DB",
+                            "calculationMethod": "BS",
+                            "unavailableReason": "NET",
+                            "payableDetails": {
+                                "amountType": "INC",
+                                "annualAmount": 12000,
+                                "payableDate": "2034-01-01",
+                                "lastPaymentDate": "2064-01-01",
+                                "monthlyAmount": 1000
+                            },
+                            "illustrationWarnings": [
+                                "CUR"
+                            ],
+                            "dcPot": 20000
+                        },
+                        {
+                            "illustrationType": "AP",
+                            "survivorBenefit": false,
+                            "safeguardedBenefit": false,
+                            "unavailableReason": "ANO",
+                            "benefitType": "DBL",
+                            "calculationMethod": "CBI"
+                        }
+                    ]
+                }
+            ],
+            "pensionAdministrator": {
+                "name": "Administrator Name",
+                "contactMethods": [
+                    {
+                        "preferred": true,
+                        "contactMethodDetails": {
+                            "email": "fola.sonoiki@solirius.com"
+                        }
+                    }
+                ]
+            },
+            "additionalDataSources": [
+                {
+                    "informationType": "C_AND_C",
+                    "url": "https://www.url.com"
+                }
+            ],
+            "employmentMembershipPeriods": [
+                {
+                    "employerName": "Employer Name",
+                    "employerStatus": "C",
+                    "membershipStartDate": "2002-02-01"
+                }
+            ]
+        }
+    ]
+}
