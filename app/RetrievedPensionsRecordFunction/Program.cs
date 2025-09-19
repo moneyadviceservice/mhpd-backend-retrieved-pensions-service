@@ -21,7 +21,7 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddMhpdCosmosDb(hostContext.Configuration);
-        services.AddMhpdUtilities();
+        services.AddMhpdUtilities(hostContext.Configuration);
         services.AddMhpdServiceBusTools();
         services.AddTransformServices();
         services.AddScoped<IPensionRecordRepository, PensionRecordRepository>();

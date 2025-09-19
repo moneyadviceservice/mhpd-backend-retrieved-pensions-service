@@ -112,7 +112,7 @@ namespace RetrievedPensionsRecordFunction
 
             var userSessionId = req.Headers[HeaderConstants.UserSessionId].ToString();
 
-            logger.LogRequest($"User Session Id: {userSessionId}");
+            logger.LogRequestReceived($"{logSource} for session Id: {userSessionId}");
 
             if (!validator.IsValidGuid(userSessionId))
             {
@@ -122,7 +122,7 @@ namespace RetrievedPensionsRecordFunction
 
             var records = await processor(userSessionId);
 
-            logger.LogResponse(records);
+            logger.LogResponseSent(records);
 
             return new OkObjectResult(records);
         }
