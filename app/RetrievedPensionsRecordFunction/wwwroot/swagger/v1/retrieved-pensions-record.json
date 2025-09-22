@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.1",
+  "openapi": "3.0.4",
   "info": {
     "title": "MaPS Retrieved Pension Records",
     "description": "This service allows a client to retrieve retrieved pension records related to a user session",
