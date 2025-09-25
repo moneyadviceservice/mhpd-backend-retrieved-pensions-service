@@ -14,9 +14,8 @@ It provides a reliable interface for processing requests and managing the associ
 The service follows a modular architecture with clear separation of concerns. Key components include:
 
 - **Functions**: Implement Azure Functions that handle incoming HTTP requests and orchestrate responses.
-- **Models**: Define the data structures for requests and responses, including models for handling pension records. [WIKI Models](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/13666799/Retrieved+Pension+Record)
+- **Models**: Define the data structures for requests and responses, including models for handling pension records.
 - **Repository**: Encapsulates the logic for data access, managing interactions with the Cosmos DB.
-- **Architecture Diagram HLD**: [MHPD HL Architecture](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/13666036/High+Level+Architecture)
 
 ## Tech Stack
 
@@ -41,7 +40,7 @@ To set up the Retrieved Pensions Record Service locally, follow these steps:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://moneyandpensionsservice@dev.azure.com/moneyandpensionsservice/MaPS%20Digital/_git/mhpd-backend-retrieved-pensions-service
+   git clone https://github.com/moneyadviceservice/mhpd-backend-retrieved-pensions-service.git
    cd app/RetrievedPensionsRecordFunction
 	```
 
@@ -50,7 +49,7 @@ To set up the Retrieved Pensions Record Service locally, follow these steps:
     dotnet restore
     ```
 
-3. **Configure Application Settings**: Update the local.settings.json file with your configuration settings. Here�s an example structure based on the current requirements:
+3. **Configure Application Settings**: Update the local.settings.json file with your configuration settings. Here's an example structure based on the current requirements:
 ```bash
 {
   "IsEncrypted": false,
