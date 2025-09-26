@@ -90,20 +90,6 @@ cd tests
 dotnet test
 ```
 
-## Pipelines
-- infrastructure-deploy.yml
-  - Terraform infrastructure for the function apps and app services
-  - Pipeline name is 'MHPD-backend-infrastructure'
-- func-retrieved-pensions-deploy.yml
-  - Deploy .NET App to func-retrieved-pensions-<env>
-  - Pipeline name is mhpd-backend-retrieved-pensions-service-deploy'
-- retrieved-pensions-api-publish.yml
-  - Pipeline name is 'mhpd-backend-retrieved-pensions-service-api-publish'
-  - Exports the API spec to api-docs repo and bumps the version of the APIm resource
-- ci.yml
-  - Builds and tests the project
-  - Pipeline name is 'mhpd-backend-retrieved-pensions-service-ci'
-
 ## Contributing
 Submit a pull request or open an issue for any enhancements or bug fixes.
 
