@@ -188,7 +188,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
         }
 
-        return currentNode?.GetValue<string>().Trim('"') ?? defaultValue;
+        return currentNode?.GetValue<object>()?.ToString()?.Trim('"') ?? defaultValue;
     }
 
     private static (string pei, string retrievalId, string userSessionId) GetPayloadIds(string? messagePayload)
