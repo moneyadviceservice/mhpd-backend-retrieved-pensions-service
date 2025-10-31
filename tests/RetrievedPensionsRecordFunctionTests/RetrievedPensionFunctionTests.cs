@@ -173,6 +173,33 @@ public class RetrievedPensionFunctionTests
     }
 
     [Fact]
+    public async Task Run_ShouldCallCompleteMessage_OnSaveSuccessWithValidEscapedChars()
+    {
+        ResetInvocations();
+
+        //arrange
+        var payload = DataProvider.GetPayload("EscapableCharValidRetrievedPensionPayload.json");
+
+        _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
+
+        var content = DataProvider.GetString("EscapableCharValidRetrievedPensionPayload.json");
+        var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
+            body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
+
+        // Act
+        await _function.Run(message, _actionsMock.Object);
+
+        // Assert
+        _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.SaveRetrievedPensionRecordAsync(
+            It.Is<string>(id => id == message.CorrelationId),
+            It.Is<RetrievedPensionRecord>(record => !record.SchemeName.Contains('\\'))), Times.Once);
+        
+    }
+
+    [Fact]
     public async Task Run_ShouldCallCompleteMessage_OnSysErrorPayload()
     {
         ResetInvocations();

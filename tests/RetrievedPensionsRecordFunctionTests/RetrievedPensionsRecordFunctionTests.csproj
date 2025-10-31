@@ -29,6 +29,7 @@
     <EmbeddedResource Include="Data\InvalidPeiPatternPayload.json" />
     <EmbeddedResource Include="Data\InvalidRecordIdPayload.json" />
     <EmbeddedResource Include="Data\SysErrorPayload.json" />
+    <EmbeddedResource Include="Data\EscapableCharValidRetrievedPensionPayload.json" />
     <EmbeddedResource Include="Data\ValidRetrievedPensionPayload.json" />
   </ItemGroup>
 

@@ -168,7 +168,10 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
 
         var resultArray = resultNode.AsArray();
-        if (resultArray.FirstOrDefault() is not JsonObject firstObj) return defaultValue;
+        if (resultArray.FirstOrDefault() is not JsonObject firstObj)
+        {
+            return defaultValue;
+        }
 
         var segments = propertyPath.Split('.');
         JsonNode? currentNode = firstObj;
@@ -185,7 +188,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
         }
 
-        return currentNode?.ToJsonString().Trim('"') ?? defaultValue;
+        return currentNode?.GetValue<object>()?.ToString()?.Trim('"') ?? defaultValue;
     }
 
     private static (string pei, string retrievalId, string userSessionId) GetPayloadIds(string? messagePayload)
