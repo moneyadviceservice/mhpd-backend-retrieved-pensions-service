@@ -139,11 +139,11 @@ public class RetrievedPensionFunctionTests
     }
 
     [Theory]
-    [InlineData("ValidRetrievedPensionPayload.json", EvaluationConstants.Category.Contact, "1ba03e25-659a-43b8-ae77-b956df168969")]
-    [InlineData("DB_ERI-DB_AP-NONE-Payload.json", EvaluationConstants.Category.Confirmed, "b057131c-d860-40db-b521-15e62a078128")]
-    [InlineData("DC_ERI-NET_AP-ANO-Payload.json", EvaluationConstants.Category.Pending, "9f1bfd4a-4e39-4c59-bac5-c6860250f962")]
-    [InlineData("DC_ERI-NONE-SML_AP-NONE-Payload.json", EvaluationConstants.Category.Confirmed, "89885682-d540-4abe-a075-bc25a46b79df")]
-    public async Task Run_ShouldCallCompleteMessage_OnSaveSuccess(string file, string category, string assetId)
+    [InlineData("ValidRetrievedPensionPayload.json", Category.Contact, "1ba03e25-659a-43b8-ae77-b956df168969", "e01a9df7-f147-4a3a-a1dd-0507432a5b7f")]
+    [InlineData("DB_ERI-DB_AP-NONE-Payload.json", Category.Confirmed, "b057131c-d860-40db-b521-15e62a078128", null)]
+    [InlineData("DC_ERI-NET_AP-ANO-Payload.json", Category.Pending, "9f1bfd4a-4e39-4c59-bac5-c6860250f962", null)]
+    [InlineData("DC_ERI-NONE-SML_AP-NONE-Payload.json", Category.Confirmed, "89885682-d540-4abe-a075-bc25a46b79df", null)]
+    public async Task Run_ShouldCallCompleteMessage_OnSaveSuccess(string file, string category, string assetId, string? pensionLink)
     {
         ResetInvocations();
 
@@ -167,8 +167,9 @@ public class RetrievedPensionFunctionTests
             It.Is<string>(id => id == message.CorrelationId),
             It.Is<RetrievedPensionRecord>(record =>
                 record.Pei == payload!.Pei &&
-                record.PensionsRetrievalRecordId == payload!.PensionRetrievalRecordId &&
+                record.UserSessionId == payload!.UserSessionId &&
                 record.Category == category &&
+                record.PensionLinkId == pensionLink &&
                 record.AssetId == assetId)), Times.Once);
     }
 
@@ -225,10 +226,10 @@ public class RetrievedPensionFunctionTests
             It.Is<string>(id => id == message.CorrelationId),
             It.Is<RetrievedPensionRecord>(record =>
                 record.Pei == payload!.Pei &&
-                record.PensionsRetrievalRecordId == payload!.PensionRetrievalRecordId &&
-                record.Category == EvaluationConstants.Category.Error && 
-                record.PensionType == EvaluationConstants.Category.Error &&
-                record.MatchType == EvaluationConstants.Category.Error)), Times.Once);
+                record.UserSessionId == payload!.UserSessionId &&
+                record.Category == Category.Error && 
+                record.PensionType == Category.Error &&
+                record.MatchType == Category.Error)), Times.Once);
     }
 
     private void ResetInvocations()

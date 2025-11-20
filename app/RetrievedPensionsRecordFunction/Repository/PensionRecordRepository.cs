@@ -16,8 +16,21 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
     public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
         var response = await GetRecordsAsync(userSessionId, category, assetId);
+        List<RetrievedPensionRecord> records = [.. response];
 
-        return [.. response];
+        if (assetId is not null)
+        {
+            //if we are querying by asset id, we need to return all records with the same pension link id
+            var detailRecord = records.SingleOrDefault();
+
+            if (detailRecord?.PensionLinkId is not null)
+            {
+                var allRecords = await GetRecordsAsync(userSessionId);
+                records.AddRange(allRecords.Where(record => record.PensionLinkId == detailRecord.PensionLinkId && record.AssetId != detailRecord.AssetId));
+            }
+        }
+
+        return records;
     }
 
     public async Task<List<string>> GetRetrievedPeisAsync(string userSessionId)
@@ -37,7 +50,7 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
             return false;
         }
 
-        var response = await _container.UpsertItemAsync(record, new PartitionKey(record.PensionsRetrievalRecordId), null, default);
+        var response = await _container.UpsertItemAsync(record, new PartitionKey(record.UserSessionId), null, default);
 
         string? logMessage;
 
@@ -62,7 +75,7 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 
         foreach (var record in response)
         {
-            await _container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.PensionsRetrievalRecordId));
+            await _container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.UserSessionId));
         }
 
         return response.Count;

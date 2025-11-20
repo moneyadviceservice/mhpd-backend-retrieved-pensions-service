@@ -103,7 +103,7 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    public async Task WhenRecordIsRequested_DatabaseResultIsCorrect()
+    public async Task WhenSessionRecordsAreRequested_DatabaseResultIsCorrect()
     {
         //Arrange
         List<RetrievedPensionRecord> records = [
@@ -114,10 +114,40 @@ public  class PensionRecordRepositoryTests
         _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
 
         //Act
-        var result = await _repository.GetRetrievedRecordsAsync("sessionId", "CONFIRMED", "assetId");
+        var result = await _repository.GetRetrievedRecordsAsync("sessionId", "CONFIRMED");
 
         //Assert
         Assert.Equal(2, result.Count);
+    }
+
+    [Theory]
+    [InlineData(true, 2)]
+    [InlineData(false, 1)]
+    public async Task WhenDetailRecordIsRequested_DatabaseResultIsCorrect(bool withPensionLink, int expectedCount)
+    {
+        //Arrange
+        RetrievedPensionRecord retrievedPensionRecord = withPensionLink
+            ? new RetrievedPensionRecord { AssetId = "A", PensionLinkId = "XYZ" }
+            : new RetrievedPensionRecord { AssetId = "B" };
+
+        List<RetrievedPensionRecord> detailRecord = [ retrievedPensionRecord ];
+
+        List<RetrievedPensionRecord> allRecords = [
+            new RetrievedPensionRecord{ AssetId = "A", PensionLinkId = "XYZ"},
+            new RetrievedPensionRecord{ AssetId = "B"},
+            new RetrievedPensionRecord{ AssetId = "C", PensionLinkId = "XYZ"}
+        ];
+
+        _readResponse
+        .SetupSequence(r => r.GetEnumerator())
+        .Returns(detailRecord.GetEnumerator())
+        .Returns(allRecords.GetEnumerator());
+
+        //Act
+        var result = await _repository.GetRetrievedRecordsAsync("sessionId", "CONFIRMED", retrievedPensionRecord.AssetId);
+
+        //Assert
+        Assert.Equal(expectedCount, result.Count);
     }
 
     [Fact]
@@ -168,7 +198,7 @@ public  class PensionRecordRepositoryTests
         return new RetrievedPensionRecord
         {
             Pei = "pei",
-            PensionsRetrievalRecordId = "recordId",
+            UserSessionId = "sessionId",
             RetrievalResult = Array.Empty<List<PensionArrangement>>()
         };
     }
