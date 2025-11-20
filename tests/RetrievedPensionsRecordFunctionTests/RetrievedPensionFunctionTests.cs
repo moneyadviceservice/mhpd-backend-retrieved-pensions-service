@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RetrievedPensionsRecordFunction;
+using RetrievedPensionsRecordFunction.Models;
 using RetrievedPensionsRecordFunction.Repository;
 using RetrievedPensionsRecordFunctionTests.Data;
 using static MhpdCommon.ViewData.EvaluationConstants;
@@ -208,8 +209,11 @@ public class RetrievedPensionFunctionTests
         //arrange
         const string file = "SysErrorPayload.json";
         var payload = DataProvider.GetPayload(file);
+        var holderNameId = "ca6f57a9-51de-4e9f-9a5a-d3fddcccd029";
+        var assetId = "d80df6ec-1c02-4a8d-8e72-ceb2dae9b6e4";
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
+        _idValidatorMock.Setup(x => x.TryExtractPei("ca6f57a9-51de-4e9f-9a5a-d3fddcccd029:d80df6ec-1c02-4a8d-8e72-ceb2dae9b6e4", out holderNameId, out assetId)).Returns(true);
         _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
 
@@ -228,8 +232,10 @@ public class RetrievedPensionFunctionTests
                 record.Pei == payload!.Pei &&
                 record.UserSessionId == payload!.UserSessionId &&
                 record.Category == Category.Error && 
-                record.PensionType == Category.Error &&
-                record.MatchType == Category.Error)), Times.Once);
+                record.PensionType == Constants.UnkonwnPensionType &&
+                record.MatchType == Constants.UnkonwnMatchType &&
+                record.SchemeName == string.Empty &&
+                record.AssetId == assetId)), Times.Once);
     }
 
     private void ResetInvocations()

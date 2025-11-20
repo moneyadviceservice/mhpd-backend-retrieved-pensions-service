@@ -90,7 +90,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
                 Pei = pei,
                 UserSessionId = userSessionId,
                 PensionLinkId = pensionLinkId,
-                AssetId = GetAssetId(resultNode),
+                AssetId = GetAssetId(resultNode, pei),
                 Category = GetCategory(resultNode),
                 SchemeName = GetSchemeName(resultNode),
                 PensionType = GetPensionType(resultNode),
@@ -129,35 +129,35 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return GetArrangementProperty(resultNode, PensionConstants.PensionCategory, Category.Unsupported);
     }
 
-    private static string GetAssetId(JsonNode? resultNode)
+    private string GetAssetId(JsonNode? resultNode, string pei)
     {
-        var defaultValue = Guid.NewGuid().ToString();
-        return GetArrangementProperty(resultNode, PensionConstants.ExternalAssetId, defaultValue, defaultValue);
+        idValidator.TryExtractPei(pei, out _, out var assetId);
+        return GetArrangementProperty(resultNode, PensionConstants.ExternalAssetId, assetId, assetId);
     }
 
     private static string GetSchemeName(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme);
+        return GetArrangementProperty(resultNode, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme, string.Empty);
     }
 
     private static string GetPensionType(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.PensionType, Constants.UnkonwnPensionType);
+        return GetArrangementProperty(resultNode, PensionConstants.PensionType, Constants.UnkonwnPensionType, Constants.UnkonwnPensionType);
     }
 
     private static string GetMatchType(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType);
+        return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType, Constants.UnkonwnMatchType);
     }
 
     private static string GetIncome(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, "false");
+        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, "false", "false");
     }
 
     private static string GetAdministrator(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, $"{PensionConstants.PensionAdministrator}.name", Constants.UnkonwnAdministrator);
+        return GetArrangementProperty(resultNode, $"{PensionConstants.PensionAdministrator}.name", Constants.UnkonwnAdministrator, Constants.UnkonwnAdministrator);
     }
 
     private static string GetArrangementProperty(JsonNode? resultNode, string propertyPath, string defaultValue, string valueOnError = Category.Error)
