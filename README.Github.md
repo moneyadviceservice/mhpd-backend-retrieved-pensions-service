@@ -109,3 +109,5 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 0.8.0 — 2025-12-03
 - Added Support for AVC Pension Type.
 - Added Support for linked pensions
+- Added Support for Pensions with multiple arrangements.
+- Added Support for HYB Pension Type.
