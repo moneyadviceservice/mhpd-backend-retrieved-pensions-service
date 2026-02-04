@@ -4,7 +4,6 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
-using System.Text;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
@@ -83,35 +82,31 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
 
     private Task<FeedResponse<RetrievedPensionRecord>> GetRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
-        var queryBuilder = new StringBuilder("SELECT * FROM c WHERE 1=1");
+        var conditions = new List<string>();
         var parameters = new Dictionary<string, string>();
-
-        if (!string.IsNullOrWhiteSpace(userSessionId))
-        {
-            queryBuilder.Append(" AND c.userSessionId = @sessionId");
-            parameters["@sessionId"] = userSessionId;
-        }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            queryBuilder.Append(" AND c.category = @category");
+            conditions.Add("c.category = @category");
             parameters["@category"] = category;
         }
 
         if (!string.IsNullOrWhiteSpace(assetId))
         {
-            queryBuilder.Append(" AND c.assetId = @assetId");
+            conditions.Add("c.assetId = @assetId");
             parameters["@assetId"] = assetId;
         }
 
-        var queryDefinition = new QueryDefinition(queryBuilder.ToString());
+        var queryDefinition = conditions.Count > 0
+            ? new QueryDefinition($"SELECT * FROM c WHERE {string.Join(" AND ", conditions)}")
+            : new QueryDefinition($"SELECT * FROM c");
 
         foreach (var param in parameters)
         {
             queryDefinition.WithParameter(param.Key, param.Value);
         }
 
-        var iterator = _container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition);
+        var iterator = _container.GetItemQueryIterator<RetrievedPensionRecord>(queryDefinition, null, new QueryRequestOptions { PartitionKey = new PartitionKey(userSessionId) });
 
         return iterator.ReadNextAsync();
     }

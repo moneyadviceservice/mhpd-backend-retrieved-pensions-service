@@ -33,7 +33,7 @@ public class RetrievedPensionFunctionTests
         _idValidatorMock.Setup(x => x.IsValidPeI(It.IsAny<string>())).Returns(false);
 
         _processorMock = new Mock<IArrangementProcessor>();
-        _processorMock.Setup(x => x.ProcessArrangement(It.IsAny<string>())).Returns((string input) => input);
+        _processorMock.Setup(x => x.ProcessArrangementAsync(It.IsAny<string>())).ReturnsAsync((string input) => input);
 
         _repositoryMock = new Mock<IPensionRecordRepository>();
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
@@ -64,7 +64,7 @@ public class RetrievedPensionFunctionTests
             body: new BinaryData("Test message"));
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         var reason = "Missing or Invalid correlationId:";
@@ -85,7 +85,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _repositoryMock.Verify(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), 
@@ -108,7 +108,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _repositoryMock.Verify(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(),
@@ -133,7 +133,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.AbandonMessageAsync(message, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -160,7 +160,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
@@ -191,7 +191,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
@@ -222,7 +222,7 @@ public class RetrievedPensionFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);

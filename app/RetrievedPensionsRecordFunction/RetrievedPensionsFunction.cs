@@ -31,9 +31,15 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
     [Function(nameof(RetrievedPensionsFunction))]
     public async Task Run(
-        [ServiceBusTrigger("%CommonServiceBusConfiguration:InboundQueue%", Connection = "ServiceBusConnectionstring")]
-        ServiceBusReceivedMessage message,
+        [ServiceBusTrigger("%CommonServiceBusConfiguration:InboundQueue%", Connection = "ServiceBusConnectionstring", IsBatched = true)]
+        ServiceBusReceivedMessage[] messages,
         ServiceBusMessageActions messageActions)
+    {
+        var messageTasks = messages.Select(m => HandleMessage(m, messageActions)).ToList();
+        await Task.WhenAll(messageTasks);
+    }
+
+    private async Task HandleMessage(ServiceBusReceivedMessage message, ServiceBusMessageActions messageActions)
     {
         if (!idValidator.IsValidGuid(message.CorrelationId))
         {
@@ -44,11 +50,12 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
 
         using var scope = logger.BeginCorrelationScope(message.CorrelationId, Constants.QueueLogSource);
+
         LogRequestMesage(message);
 
         try
         {
-            var payload = ExtractAndValidateMessagePayload(message);
+            var payload = await ExtractAndValidateMessagePayloadAsync(message);
 
             if (await pensionRepository.SaveRetrievedPensionRecordAsync(message.CorrelationId, payload))
             {
@@ -66,7 +73,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
     }
 
-    private RetrievedPensionRecord ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
+    private async Task<RetrievedPensionRecord> ExtractAndValidateMessagePayloadAsync(ServiceBusReceivedMessage message)
     {
         var messageBody = Encoding.UTF8.GetString(message.Body);
         string? logMessage;
@@ -75,7 +82,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         try
         {
-            var classifiedPayload = arrangementProcessor.ProcessArrangement(messageBody);
+            var classifiedPayload = await arrangementProcessor.ProcessArrangementAsync(messageBody);
             payload = messageParser.ToRetrievedPensionPayload(classifiedPayload);
 
             ArgumentNullException.ThrowIfNull(payload);
@@ -223,8 +230,13 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
     {
-        var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], " +
-            $"MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
+        var enqueudTimespan = DateTimeOffset.UtcNow - receivedMessage.EnqueuedTime;
+        if (enqueudTimespan.TotalSeconds > 5)
+        {
+            logger.LogWarning("Message with MessageId: {MessageId}, CorrelationId: {CorrelationId} has been in the queue for {EnqueudTimespan}.", receivedMessage.MessageId, receivedMessage.CorrelationId, enqueudTimespan);
+        }
+
+        var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
         logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
     }
 }
