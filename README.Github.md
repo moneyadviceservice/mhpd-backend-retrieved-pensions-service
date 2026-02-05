@@ -111,3 +111,10 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 - Added Support for linked pensions
 - Added Support for Pensions with multiple arrangements.
 - Added Support for HYB Pension Type.
+
+### 🔧 Release 0.9.0 — 2026-02-12
+- Service network rules changed to allow traffic from other apps on the vnet
+- Batching and concurrency configurations
+- Cosmos query improvements
+- Process arrangement now async
+- Additional logging
