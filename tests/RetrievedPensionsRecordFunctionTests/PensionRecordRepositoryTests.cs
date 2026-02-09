@@ -15,6 +15,7 @@ public  class PensionRecordRepositoryTests
     private readonly Mock<ItemResponse<RetrievedPensionRecord>> _writeResponse;
     private readonly Mock<FeedResponse<RetrievedPensionRecord>> _readResponse;
     private readonly PensionRecordRepository _repository;
+    private readonly Mock<Container> _container;
 
     public PensionRecordRepositoryTests()
     {
@@ -24,24 +25,26 @@ public  class PensionRecordRepositoryTests
             RetrievedPensionsContainer = "PensionContainer"
         };
 
-        var container = new Mock<Container>();
         var client = new Mock<CosmosClient>();
         var iterator = new Mock<FeedIterator<RetrievedPensionRecord>>();
         var loggerMock = new Mock<ILogger<PensionRecordRepository>>();
 
         _writeResponse = new Mock<ItemResponse<RetrievedPensionRecord>>();
         _readResponse = new Mock<FeedResponse<RetrievedPensionRecord>>();
+        _container = new Mock<Container>();
 
         iterator.Setup(mock => mock.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_readResponse.Object);
 
         client.Setup(mock => mock.GetContainer(configuration.DatabaseId, configuration.RetrievedPensionsContainer))
-            .Returns(container.Object);
+            .Returns(_container.Object);
 
-        container.Setup(mock => mock.UpsertItemAsync(
-            It.IsAny<RetrievedPensionRecord>(), It.IsAny<PartitionKey>(), null, default))
-            .Returns(Task.FromResult(_writeResponse.Object));
-        container.Setup(mock => mock.GetItemQueryIterator<RetrievedPensionRecord>(It.IsAny<QueryDefinition>(),
-            It.IsAny<string>(), It.IsAny<QueryRequestOptions>())).Returns(iterator.Object);
+        _container.Setup(mock => mock.UpsertItemAsync(It.IsAny<RetrievedPensionRecord>(), It.IsAny<PartitionKey>(), null, default))
+            .ReturnsAsync(_writeResponse.Object);
+        _container.Setup(mock => mock.GetItemQueryIterator<RetrievedPensionRecord>(It.IsAny<QueryDefinition>(), It.IsAny<string>(), It.IsAny<QueryRequestOptions>()))
+            .Returns(iterator.Object);
+        _container.Setup(mock => mock.DeleteAllItemsByPartitionKeyStreamAsync(It.IsAny<PartitionKey>(), null, default))
+            .ReturnsAsync(new Microsoft.Azure.Cosmos.ResponseMessage(HttpStatusCode.OK))
+            .Verifiable();
 
         var options = Options.Create(configuration);
         _repository = new PensionRecordRepository(client.Object, options, loggerMock.Object);
@@ -177,20 +180,13 @@ public  class PensionRecordRepositoryTests
     public async Task WhenRecordAreDeleted_DatabaseResultIsCorrect()
     {
         //Arrange
-        List<RetrievedPensionRecord> records = [
-            new RetrievedPensionRecord(),
-            new RetrievedPensionRecord(),
-            new RetrievedPensionRecord()
-        ];
-
-        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
-        _readResponse.Setup(mock => mock.Count).Returns(records.Count);
+        var userSessionId = Guid.NewGuid().ToString();
 
         //Act
-        var result = await _repository.DeleteRetrievedRecordsAsync(Guid.NewGuid().ToString());
+        await _repository.DeleteRetrievedRecordsAsync(userSessionId);
 
         //Assert
-        Assert.Equal(records.Count, result);
+        _container.Verify(c => c.DeleteAllItemsByPartitionKeyStreamAsync(It.Is<PartitionKey>(pk => pk == new PartitionKey(userSessionId)), null, default), Times.Once);
     }
 
     private static RetrievedPensionRecord GetPayload()

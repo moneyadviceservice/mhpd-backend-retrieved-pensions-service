@@ -91,7 +91,11 @@ namespace RetrievedPensionsRecordFunction
             Description = "The number of records deleted as part of the request")]
         public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "retrieved-pension-records")] HttpRequest req)
         {
-            return await ProcessRetrievedRecordsAsync(req, Constants.PensionsDeleteLogSource, repository.DeleteRetrievedRecordsAsync);
+            return await ProcessRetrievedRecordsAsync(req, Constants.PensionsDeleteLogSource, async userSessionId =>
+            {
+                await repository.DeleteRetrievedRecordsAsync(userSessionId);
+                return default(int);
+            });
         }
 
         private async Task<IActionResult> ProcessRetrievedRecordsAsync<T>(HttpRequest req, string logSource, Func<string, Task<T>> processor)

@@ -10,5 +10,5 @@ public interface IPensionRecordRepository
 
     Task<List<string>> GetRetrievedPeisAsync(string userSessionId);
 
-    Task<int> DeleteRetrievedRecordsAsync(string userSessionId);
+    Task DeleteRetrievedRecordsAsync(string userSessionId);
 }

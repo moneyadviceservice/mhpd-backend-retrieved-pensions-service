@@ -30,10 +30,13 @@ public class RetrievedRecordsFunctionTest
 
         _repository = new Mock<IPensionRecordRepository>();
         _repository.Setup(mock => mock.GetRetrievedRecordsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync([new RetrievedPensionRecord()]).Verifiable();
+            .ReturnsAsync([new RetrievedPensionRecord()])
+            .Verifiable();
         _repository.Setup(mock => mock.GetRetrievedPeisAsync(It.IsAny<string>()))
-            .ReturnsAsync(["A", "B", "C"]).Verifiable();
-        _repository.Setup(mock => mock.DeleteRetrievedRecordsAsync(It.IsAny<string>())).ReturnsAsync(It.IsAny<int>()).Verifiable();
+            .ReturnsAsync(["A", "B", "C"])
+            .Verifiable();
+        _repository.Setup(mock => mock.DeleteRetrievedRecordsAsync(It.IsAny<string>()))
+            .Verifiable();
 
         _function = new RetrievedRecordsFunction(_loggerMock.Object, _repository.Object, _idValidatorMock.Object);
     }

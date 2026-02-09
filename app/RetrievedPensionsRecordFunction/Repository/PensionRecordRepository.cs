@@ -1,4 +1,5 @@
-﻿using MhpdCommon.Models.Configuration;
+﻿using Azure;
+using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
@@ -7,10 +8,10 @@ using System.Net;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
-public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosBusinessConfiguration> config, ILogger<PensionRecordRepository> logger) 
+public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosBusinessConfiguration> cosmosBusinessConfiguration, ILogger<PensionRecordRepository> logger) 
     : IPensionRecordRepository
 {
-    private readonly Container _container = cosmosClient.GetContainer(config.Value.DatabaseId, config.Value.RetrievedPensionsContainer);
+    private readonly Container _container = cosmosClient.GetContainer(cosmosBusinessConfiguration.Value.DatabaseId, cosmosBusinessConfiguration.Value.RetrievedPensionsContainer);
 
     public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
     {
@@ -35,7 +36,6 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
     public async Task<List<string>> GetRetrievedPeisAsync(string userSessionId)
     {
         var response = await GetRecordsAsync(userSessionId);
-
         return [.. response.Select(record => record.Pei!)];
     }
 
@@ -68,16 +68,18 @@ public class PensionRecordRepository(CosmosClient cosmosClient, IOptions<CosmosB
         return false;
     }
 
-    public async Task<int> DeleteRetrievedRecordsAsync(string userSessionId)
+    public async Task DeleteRetrievedRecordsAsync(string userSessionId)
     {
-        var response = await GetRecordsAsync(userSessionId);
-
-        foreach (var record in response)
+        var response = await _container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey(userSessionId));
+        if (!response.IsSuccessStatusCode)
         {
-            await _container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.UserSessionId));
+            throw new CosmosException(
+                response.ErrorMessage,
+                response.StatusCode,
+                0,
+                response.Headers.ActivityId,
+                response.Headers.RequestCharge);
         }
-
-        return response.Count;
     }
 
     private Task<FeedResponse<RetrievedPensionRecord>> GetRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
