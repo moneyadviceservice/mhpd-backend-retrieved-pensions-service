@@ -1,0 +1,1 @@
+cd tests/mhpd-retrieved-pensions-service-tests && npx lint-staged

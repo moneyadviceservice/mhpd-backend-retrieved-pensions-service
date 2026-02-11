@@ -1,0 +1,18 @@
+{
+  "name": "mhpd-backend-retrieved-pensions-service",
+  "version": "1.0.0",
+  "description": "The Retrieved Pensions Record Service is an Azure Function app designed to manage pension records retrieved from external sources. Retrieved pensions are received by this service via a service bus queue. It makes the retrieved pensions available to other services via REST http endpoints.\r It provides a reliable interface for processing requests and managing the associated pension data.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
