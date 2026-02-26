@@ -1,58 +1,72 @@
 using MhpdCommon.Extensions;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Abstractions;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
+using MhpdCommon.Models.OpenApi;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
-using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
+using Microsoft.OpenApi;
 using RetrievedPensionsRecordFunction.Repository;
+using System.Reflection;
 
-var host = new HostBuilder()
-    .ConfigureOpenApi()
-    .ConfigureFunctionsWebApplication()
-    .ConfigureAppConfiguration((context, config) =>
+var builder = FunctionsApplication.CreateBuilder(args);
+
+builder.Configuration
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+
+builder.ConfigureFunctionsWebApplication();
+
+if (!string.IsNullOrEmpty(builder.Configuration.GetValue<string>("ApplicationInsights:ConnectionString")))
+{
+    builder.Services.AddApplicationInsightsTelemetryWorkerService();
+}
+
+builder.Services.AddMhpdCosmosDb(builder.Configuration);
+builder.Services.AddMhpdUtilities(builder.Configuration);
+builder.Services.AddMhpdServiceBusTools();
+builder.Services.AddTransformServices();
+builder.Services.AddScoped<IPensionRecordRepository, PensionRecordRepository>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.EnableAnnotations();
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
-        config.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
-    })
-    .ConfigureServices((hostContext, services) =>
-    {
-        services.AddApplicationInsightsTelemetryWorkerService();
-        services.ConfigureFunctionsApplicationInsights();
-        services.AddMhpdCosmosDb(hostContext.Configuration);
-        services.AddMhpdUtilities(hostContext.Configuration);
-        services.AddMhpdServiceBusTools();
-        services.AddTransformServices();
-        services.AddScoped<IPensionRecordRepository, PensionRecordRepository>();
-        services.AddSingleton<IOpenApiConfigurationOptions>(_ =>
+        Title = "MaPS Retrieved Pension Records",
+        Description = "This service allows a client to retrieve retrieved pension records related to a user session",
+        Contact = new OpenApiContact
         {
-            var options = new OpenApiConfigurationOptions()
-            {
-                Info = new OpenApiInfo
-                {
-                    Title = "MaPS Retrieved Pension Records",
-                    Version = DefaultOpenApiConfigurationOptions.GetOpenApiDocVersion(),
-                    Description =
-                        "This service allows a client to retrieve retrieved pension records related to a user session",
-                    Contact = new OpenApiContact
-                    {
-                        Name = "General Enquires",
-                        Email = "contact@maps.org.uk",
-                        Url = new Uri("https://maps.org.uk/en/about-us/contact-us")
-                    },
-                    License = new OpenApiLicense
-                    {
-                        Name = "Government API License",
-                        Url = new Uri("https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/")
-                    },
-                },
-                OpenApiVersion = Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums.OpenApiVersionType.V3
-            };
+            Name = "General Enquires",
+            Email = "contact@maps.org.uk",
+            Url = new Uri("https://maps.org.uk/en/about-us/contact-us")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Government API License",
+            Url = new Uri("https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/")
+        },
+    });
+    c.DocumentFilter<PensionDataOpenApiFilter>(Assembly.GetExecutingAssembly());
+    c.DocumentFilter<OpenApiParameterFilter>(Assembly.GetExecutingAssembly());
+    c.AddServer(new OpenApiServer
+    {
+        Url = builder.Configuration.GetValue<string>("OpenApiServerUrl") ?? "http://localhost:7289"
+    });
+});
 
-            return options;
-        });
+builder
+    .ConfigureAspNetCoreMvcIntegration(mvcBuilder =>
+    {
+        mvcBuilder.AddMvcOptions(mvcOptions => { });
     })
-    .Build();
+    .UseAspNetCoreMiddleware(app =>
+    {
+        app.UseFunctionSwaggerUI();
 
-await host.RunAsync();
+        app.UseSwagger(c => c.OpenApiVersion = OpenApiSpecVersion.OpenApi2_0);
+        app.UseSwaggerUI();
+    });
+
+var app = builder.Build();
+await app.RunAsync();

@@ -1,15 +1,17 @@
 using MhpdCommon.Constants;
 using MhpdCommon.Constants.HttpClient;
 using MhpdCommon.Extensions;
+using MhpdCommon.Models.MHPDModels;
+using MhpdCommon.Models.OpenApi;
 using MhpdCommon.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using RetrievedPensionsRecordFunction.Models;
 using RetrievedPensionsRecordFunction.Repository;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Net;
 
 namespace RetrievedPensionsRecordFunction
@@ -17,54 +19,38 @@ namespace RetrievedPensionsRecordFunction
     public class RetrievedRecordsFunction(ILogger<RetrievedRecordsFunction> logger, IPensionRecordRepository repository, IIdValidator validator)
     {
         [Function("GetRetrievedPeis")]
-        [OpenApiOperation(operationId: "get-retrieved-peis",
+        [SwaggerOperation(
+            OperationId = "get-retrieved-peis",
             Summary = "Get Retrieved Pension Records",
             Description = "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.")]
-        [OpenApiParameter(
-            HeaderConstants.UserSessionId,
-            In = ParameterLocation.Header,
-            Description = "The id of the user session that the retrieved pension record is associated with.",
-            Required = true)]
-        [OpenApiParameter(
-        HeaderConstants.CorrelationId,
-        In = ParameterLocation.Header,
-        Description = "An Id with which to group all logging statements made during a single session",
-        Required = false)]
-        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), 
+        [PensionDataOpenApi]
+        [SwaggerResponse((int)HttpStatusCode.OK, ContentTypes = ["application/json"], Type = typeof(string[]),
             Description = "The array of Retrieved Peis that match the provided query parameters")]
-        [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> GetPeisAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-peis")] HttpRequest req)
         {
             return await ProcessRetrievedRecordsAsync(req, Constants.PeisGetLogSource, id => repository.GetRetrievedPeisAsync(id));
         }
 
         [Function("GetRetrievedRecords")]
-        [OpenApiOperation(operationId: "get-retrieved-pensions-records",
+        [SwaggerOperation(
+            OperationId = "get-retrieved-pensions-records",
             Summary = "Get Retrieved Pension Records",
             Description = "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.")]
-        [OpenApiParameter(
-            HeaderConstants.UserSessionId,
-            In = ParameterLocation.Header,
-            Description = "The id of the user session that the retrieved pension record is associated with.",
-            Required = true)]
-        [OpenApiParameter(
-        HeaderConstants.CorrelationId,
-        In = ParameterLocation.Header,
-        Description = "An Id with which to group all logging statements made during a single session",
-        Required = false)]
+        [PensionDataOpenApi]
         [OpenApiParameter(
             QueryParams.RetrievedPensions.PensionCategory,
-            In = ParameterLocation.Query,
-            Description = "Gets a subset of the pensions retrieval records that have the specified classification.",
-            Required = false)]
+            ParameterLocation.Query,
+            "Gets a subset of the pensions retrieval records that have the specified classification.",
+            false)]
         [OpenApiParameter(
             QueryParams.RetrievedPensions.AssetId,
-            In = ParameterLocation.Query,
-            Description = "Gets a specific pensions retrieval record with the specified Id.",
-            Required = false)]
-        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string),
+            ParameterLocation.Query,
+            "Gets a specific pensions retrieval record with the specified Id.",
+            false)]
+        [SwaggerResponse((int)HttpStatusCode.OK, ContentTypes = ["application/json"], Type = typeof(RetrievedPensionRecord),
             Description = "The array of Retrieved Pension Records that match the provided query parameters")]
-        [OpenApiResponseWithoutBody(HttpStatusCode.BadRequest, Description = "BadRequest")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "retrieved-pension-records")] HttpRequest req)
         {
             var category = req.Query[QueryParams.RetrievedPensions.PensionCategory];
@@ -74,20 +60,12 @@ namespace RetrievedPensionsRecordFunction
         }
 
         [Function("DeleteRetrievedRecords")]
-        [OpenApiOperation(operationId: "delete-pensions-retrieved-records-id",
+        [SwaggerOperation(
+            OperationId = "delete-pensions-retrieved-records-id",
             Summary = "Delete Pensions Retrieved Record",
-            Description = "Deletes the given pension retrieved record id.")]
-        [OpenApiParameter(
-            HeaderConstants.UserSessionId,
-            In = ParameterLocation.Header,
-            Description = "The id of the user session that the retrieved pension record is associated with.",
-            Required = true)]
-        [OpenApiParameter(
-        HeaderConstants.CorrelationId,
-        In = ParameterLocation.Header,
-        Description = "An Id with which to group all logging statements made during a single session",
-        Required = false)]
-        [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(int),
+            Description = "Deletes the given pension retrieved records given userSessionId")]
+        [PensionDataOpenApi]
+        [SwaggerResponse((int)HttpStatusCode.OK, ContentTypes = ["application/json"], Type = typeof(int),
             Description = "The number of records deleted as part of the request")]
         public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "retrieved-pension-records")] HttpRequest req)
         {
