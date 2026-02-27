@@ -21,6 +21,7 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetValue<string>("ApplicationIns
     builder.Services.AddApplicationInsightsTelemetryWorkerService();
 }
 
+builder.Services.AddMhpdCosmosDb(builder.Configuration);
 builder.Services.AddMhpdRedis(builder.Configuration);
 builder.Services.AddMhpdUtilities(builder.Configuration);
 builder.Services.AddMhpdServiceBusTools();
