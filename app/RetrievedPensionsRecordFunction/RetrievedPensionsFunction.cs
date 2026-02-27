@@ -87,7 +87,6 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
             var record = new RetrievedPensionRecord
             {
-                Id = Guid.NewGuid().ToString(),
                 CorrelationId = message.CorrelationId,
                 Pei = pei,
                 UserSessionId = userSessionId,
@@ -208,7 +207,6 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         return new RetrievedPensionRecord
         {
-            Id = Guid.NewGuid().ToString(),
             Pei = pei,
             CorrelationId = correlationId,
             UserSessionId = userSessionId,
