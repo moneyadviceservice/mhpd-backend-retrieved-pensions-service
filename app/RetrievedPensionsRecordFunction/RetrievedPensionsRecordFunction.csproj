@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="MhpdCommon" Version="3.0.2" />
+    <PackageReference Include="MhpdCommon" Version="3.0.8" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
