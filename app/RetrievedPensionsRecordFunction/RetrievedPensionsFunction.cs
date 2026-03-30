@@ -154,7 +154,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
     private static string GetIncome(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, "false", "false");
+        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, Boolean.FalseString, Boolean.FalseString);
     }
 
     private static string GetAdministrator(JsonNode? resultNode)
@@ -217,7 +217,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             AssetId = Guid.NewGuid().ToString(),
             Category = Category.Error,
             SchemeName = Constants.UnkonwnPensionScheme,
-            HasIncome = "false",
+            HasIncome = Boolean.FalseString,
             Administrator = Constants.UnkonwnAdministrator,
             RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
         };
