@@ -98,6 +98,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
                 PensionType = GetPensionType(resultNode),
                 MatchType = GetMatchType(resultNode),
                 HasIncome = GetIncome(resultNode),
+                IsMcCloudPension = GetMcCloud(resultNode),
                 Administrator = GetAdministrator(resultNode),
                 RetrievalResult = payload.RetrievalResult,
             };
@@ -152,9 +153,21 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType, Constants.UnkonwnMatchType);
     }
 
-    private static string GetIncome(JsonNode? resultNode)
+    private static bool GetIncome(JsonNode? resultNode)
     {
-        return GetArrangementProperty(resultNode, PensionConstants.HasIncome, Boolean.FalseString, Boolean.FalseString);
+        return GetBooleanProperty(resultNode, PensionConstants.HasIncome);
+    }
+
+    private static bool GetMcCloud(JsonNode? resultNode)
+    {
+        return GetBooleanProperty(resultNode, PensionConstants.HasMultipleIncomeOptions);
+    }
+
+    private static bool GetBooleanProperty(JsonNode? resultNode, string propertyPath)
+    {
+        var pathValue = GetArrangementProperty(resultNode, propertyPath, Boolean.FalseString, Boolean.FalseString);
+
+        return bool.TryParse(pathValue, out var isSet) && isSet;
     }
 
     private static string GetAdministrator(JsonNode? resultNode)
@@ -217,7 +230,8 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             AssetId = Guid.NewGuid().ToString(),
             Category = Category.Error,
             SchemeName = Constants.UnkonwnPensionScheme,
-            HasIncome = Boolean.FalseString,
+            HasIncome = false,
+            IsMcCloudPension = false,
             Administrator = Constants.UnkonwnAdministrator,
             RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
         };
