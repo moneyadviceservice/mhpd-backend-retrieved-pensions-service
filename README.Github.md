@@ -118,3 +118,9 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 - Cosmos query improvements
 - Process arrangement now async
 - Additional logging
+
+### 🔧 Release 0.10.0 — 2026-03-25
+- Upgraded to .Net 10
+
+### 🔧 Release 0.11.0 — 2026-04-15
+- Updated correlation logging for .Net 10.

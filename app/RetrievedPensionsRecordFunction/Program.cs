@@ -1,6 +1,7 @@
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.OpenApi;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +51,10 @@ IHost CreateHost()
                 {
                     RegisterServices(services, hostContext.Configuration);
                 })
+            .ConfigureLogging((context, logging) =>
+                {
+                    logging.AddMhpdTelemetry(context.Configuration);
+                })
             .Build();
 
     }
@@ -57,10 +62,8 @@ IHost CreateHost()
 
 void RegisterServices(IServiceCollection services, IConfiguration configuration)
 {
-    if (!string.IsNullOrEmpty(configuration.GetValue<string>("APPLICATIONINSIGHTS_CONNECTION_STRING")))
-    {
-        services.AddApplicationInsightsTelemetryWorkerService();
-    }
+    services.AddApplicationInsightsTelemetryWorkerService();
+    services.ConfigureFunctionsApplicationInsights();
 
     services.AddMhpdCosmosDb(configuration);
     services.AddMhpdUtilities(configuration);
