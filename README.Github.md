@@ -122,5 +122,7 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 0.10.0 — 2026-03-25
 - Upgraded to .Net 10
 
-### 🔧 Release 0.11.0 — 2026-04-15
+### 🔧 Release 0.12.0 — 2026-04-22
 - Updated correlation logging for .Net 10.
+- Added support for pensions with multiple benefit illustrations.
+- Updated pension classification for DB pensions
