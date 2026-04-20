@@ -16,6 +16,7 @@ public  class PensionRecordRepositoryTests
     private readonly Mock<FeedResponse<RetrievedPensionRecord>> _readResponse;
     private readonly PensionRecordRepository _repository;
     private readonly Mock<Container> _container;
+    private readonly Mock<Database> _database;
 
     public PensionRecordRepositoryTests()
     {
@@ -32,8 +33,16 @@ public  class PensionRecordRepositoryTests
         _writeResponse = new Mock<ItemResponse<RetrievedPensionRecord>>();
         _readResponse = new Mock<FeedResponse<RetrievedPensionRecord>>();
         _container = new Mock<Container>();
+        _database = new Mock<Database>();
 
         iterator.Setup(mock => mock.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_readResponse.Object);
+
+        client.Setup(c => c.GetDatabase(configuration.DatabaseId))
+            .Returns(_database.Object);
+
+        _database
+            .Setup(d => d.GetContainer(configuration.RetrievedPensionsContainer))
+            .Returns(_container.Object);
 
         client.Setup(mock => mock.GetContainer(configuration.DatabaseId, configuration.RetrievedPensionsContainer))
             .Returns(_container.Object);
@@ -56,6 +65,10 @@ public  class PensionRecordRepositoryTests
         //Arrange
         var payload = GetPayload();
         _writeResponse.Setup(r => r.StatusCode).Returns(HttpStatusCode.Created);
+
+        List<RetrievedPensionRecord> records = [];
+
+        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
 
         //Act
         var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
@@ -81,14 +94,39 @@ public  class PensionRecordRepositoryTests
     public async Task WhenExistingPayloadIsProvided_RecordIsUpdated()
     {
         //Arrange
+        var linkId = Guid.NewGuid().ToString();
         var payload = GetPayload();
+        var existingRecordId = Guid.NewGuid().ToString();
+
+        var existingRecord = new RetrievedPensionRecord
+        {
+            AssetId = payload.AssetId,
+            Id = existingRecordId,
+            UserSessionId = payload.UserSessionId,
+            PensionLinkId = linkId
+        };
+
         _writeResponse.Setup(r => r.StatusCode).Returns(HttpStatusCode.OK);
+
+        List<RetrievedPensionRecord> detailRecord = [existingRecord];
+
+        List<RetrievedPensionRecord> linkedRecords = [
+            new RetrievedPensionRecord{ AssetId = "B", PensionLinkId = linkId},
+            existingRecord
+        ];
+
+        _readResponse
+        .SetupSequence(r => r.GetEnumerator())
+        .Returns(detailRecord.GetEnumerator())
+        .Returns(linkedRecords.GetEnumerator());
 
         //Act
         var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
 
         //Assert
         Assert.True(result);
+        _container.Verify(c => c.UpsertItemAsync(It.Is<RetrievedPensionRecord>(r => r.Id == existingRecordId), 
+            It.IsAny<PartitionKey>(), null, default), Times.Once);
     }
 
     [Fact]
@@ -97,6 +135,10 @@ public  class PensionRecordRepositoryTests
         //Arrange
         var payload = GetPayload();
         _writeResponse.Setup(r => r.StatusCode).Returns(HttpStatusCode.BadRequest);
+
+        List<RetrievedPensionRecord> records = [];
+
+        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
 
         //Act
         var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
@@ -193,6 +235,7 @@ public  class PensionRecordRepositoryTests
     {
         return new RetrievedPensionRecord
         {
+            Id = Guid.NewGuid().ToString(),
             Pei = "pei",
             UserSessionId = "sessionId",
             RetrievalResult = Array.Empty<List<PensionArrangement>>()
