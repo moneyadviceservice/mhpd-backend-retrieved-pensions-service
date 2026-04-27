@@ -25,6 +25,10 @@ public  class PensionRecordRepositoryTests
         //Arrange
         var payload = GetPayload();
 
+        List<RetrievedPensionRecord> records = [];
+
+        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
+
         //Act
         var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
 
@@ -135,6 +139,7 @@ public  class PensionRecordRepositoryTests
     {
         return new RetrievedPensionRecord
         {
+            Id = Guid.NewGuid().ToString(),
             Pei = "pei",
             UserSessionId = "sessionId",
             RetrievalResult = Array.Empty<List<PensionArrangement>>()

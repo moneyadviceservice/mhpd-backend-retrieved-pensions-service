@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "swagger": "2.0",
   "info": {
     "title": "MaPS Retrieved Pension Records",
     "description": "This service allows a client to retrieve retrieved pension records related to a user session",
@@ -11,170 +11,271 @@
     "license": {
       "name": "Government API License",
       "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-    },
-    "version": "1.0.0"
-  },
-  "servers": [
-    {
-      "url": "http://localhost:7071"
     }
+  },
+  "host": "localhost:7289",
+  "schemes": [
+    "http"
   ],
   "paths": {
-    "/GetItem": {
+    "/api/retrieved-peis": {
       "get": {
         "tags": [
-          "items"
+          "RetrievedRecordsFunction"
         ],
-        "operationId": "GetItem",
-        "responses": {
-          "200": {
-            "description": "Payload of String",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/retrieved-peis": {
-      "get": {
         "summary": "Get Retrieved Pension Records",
         "description": "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.",
         "operationId": "get-retrieved-peis",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
-            "name": "userSessionId",
             "in": "header",
-            "description": "The id of the user session that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           }
         ],
         "responses": {
           "200": {
             "description": "The array of Retrieved Peis that match the provided query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },
           "400": {
-            "description": "BadRequest"
+            "description": "Bad Request"
+          },
+          "504": {
+            "description": "Gateway Timeout"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
     },
-    "/retrieved-pension-records": {
+    "/api/retrieved-pension-records": {
       "get": {
+        "tags": [
+          "RetrievedRecordsFunction"
+        ],
         "summary": "Get Retrieved Pension Records",
         "description": "Get the retrieved retrieved-pensions-records that contains pensions information has been retrieved from the PDP Ecosystem for peis.",
         "operationId": "get-retrieved-pensions-records",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
+            "in": "header",
             "name": "userSessionId",
-            "in": "header",
-            "description": "The id of the user session that the retrieved pension record is associated with.",
+            "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
+            "in": "query",
             "name": "category",
-            "in": "query",
             "description": "Gets a subset of the pensions retrieval records that have the specified classification.",
-            "schema": {
-              "type": "string"
-            }
+            "type": "string"
           },
           {
-            "name": "assetId",
             "in": "query",
+            "name": "assetId",
             "description": "Gets a specific pensions retrieval record with the specified Id.",
-            "schema": {
-              "type": "string"
-            }
+            "type": "string"
           }
         ],
         "responses": {
           "200": {
             "description": "The array of Retrieved Pension Records that match the provided query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "$ref": "#/definitions/RetrievedPensionRecord"
             }
           },
           "400": {
-            "description": "BadRequest"
+            "description": "Bad Request"
+          },
+          "504": {
+            "description": "Gateway Timeout"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       },
       "delete": {
+        "tags": [
+          "RetrievedRecordsFunction"
+        ],
         "summary": "Delete Pensions Retrieved Record",
-        "description": "Deletes the given pension retrieved record id.",
+        "description": "Deletes the given pension retrieved records given userSessionId",
         "operationId": "delete-pensions-retrieved-records-id",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
-            "name": "userSessionId",
             "in": "header",
-            "description": "The id of the user session that the retrieved pension record is associated with.",
+            "name": "userSessionId",
+            "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string"
-            }
+            "type": "string",
+            "format": "uuid"
           }
         ],
         "responses": {
           "200": {
             "description": "The number of records deleted as part of the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
+          },
+          "504": {
+            "description": "Gateway Timeout"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
     }
   },
-  "components": { }
+  "definitions": {
+    "IActionResult": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "RetrievedPensionRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "correlationId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "pei": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "userSessionId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "pensionType": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "matchType": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "assetId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "category": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "schemeName": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "hasIncome": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "administratorName": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "pensionLinkId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "retrievalResult": {
+          "x-nullable": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "tags": [
+    {
+      "name": "RetrievedRecordsFunction"
+    }
+  ]
 }
