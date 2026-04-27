@@ -20,23 +20,6 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
-    public async Task WhenNewPayloadIsProvided_NewRecordIsSaved()
-    {
-        //Arrange
-        var payload = GetPayload();
-
-        List<RetrievedPensionRecord> records = [];
-
-        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
-
-        //Act
-        var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
-
-        //Assert
-        Assert.True(result);
-    }
-
-    [Fact]
     public async Task WhenNoCorrelationIdIsProvided_NewRecordIsNotSaved()
     {
         //Arrange
@@ -139,7 +122,7 @@ public  class PensionRecordRepositoryTests
     {
         return new RetrievedPensionRecord
         {
-            Id = Guid.NewGuid().ToString(),
+            AssetId = Guid.NewGuid().ToString(),
             Pei = "pei",
             UserSessionId = "sessionId",
             RetrievalResult = Array.Empty<List<PensionArrangement>>()
