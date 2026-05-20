@@ -129,3 +129,7 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 
 ### 🔧 Release 0.13.0 — 2026-05-06
 - Enabled PEI update when newer versions are retrieved from the provider, ensuring the most up-to-date information is stored in the system.
+
+### 🔧 Release 0.14.0 — 2026-05-20
+- Added Support for McCloud DB Pensions.
+- Reduced Holdername configuration cache lifespan to 8 hours.
