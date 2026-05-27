@@ -133,3 +133,7 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 0.14.0 — 2026-05-20
 - Added Support for McCloud DB Pensions.
 - Reduced Holdername configuration cache lifespan to 8 hours.
+
+### 🔧 Release 0.15.0 — 2026-06-03
+- Added Support for CDC Pension Type.
+- Marked McCloud pensions without matching pair of illustrations as unsupported.
