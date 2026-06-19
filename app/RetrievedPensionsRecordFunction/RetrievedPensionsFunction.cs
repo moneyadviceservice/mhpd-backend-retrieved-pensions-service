@@ -78,7 +78,7 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         try
         {
             var classifiedPayload = await arrangementProcessor.ProcessArrangementAsync(messageBody);
-            payload = messageParser.ToRetrievedPensionPayload(classifiedPayload);
+            payload = await messageParser.ToRetrievedPensionPayloadAsync(classifiedPayload);
 
             ArgumentNullException.ThrowIfNull(payload);
 

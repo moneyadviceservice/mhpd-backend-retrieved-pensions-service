@@ -19,6 +19,7 @@ public class RetrievedRecordsFunctionTest
     private readonly Mock<IIdValidator> _idValidatorMock;
     private readonly Mock<ILogger<RetrievedRecordsFunction>> _loggerMock;
     private readonly Mock<IPensionRecordRepository> _repository;
+    private readonly Mock<IServiceStatusProvider> _serviceStatusProviderMock;
     private readonly RetrievedRecordsFunction _function;
 
     public RetrievedRecordsFunctionTest()
@@ -38,7 +39,10 @@ public class RetrievedRecordsFunctionTest
         _repository.Setup(mock => mock.DeleteRetrievedRecordsAsync(It.IsAny<string>()))
             .Verifiable();
 
-        _function = new RetrievedRecordsFunction(_loggerMock.Object, _repository.Object, _idValidatorMock.Object);
+        _serviceStatusProviderMock = new Mock<IServiceStatusProvider>();
+
+        _function = new RetrievedRecordsFunction(_loggerMock.Object, _repository.Object, 
+            _idValidatorMock.Object, _serviceStatusProviderMock.Object);
     }
 
     [Theory]
@@ -205,5 +209,26 @@ public class RetrievedRecordsFunctionTest
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<int>(result.Value);
         _repository.Verify(mock => mock.DeleteRetrievedRecordsAsync(userSessionId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Function_ShouldReturnServiceStatus()
+    {
+        //Arrange
+        var status = new ServiceStatus
+        {
+            ServiceName = "RetrievedPensionService"
+        };
+
+        _serviceStatusProviderMock.Setup(mock => mock.GetServiceStatus()).Returns(status);
+
+        var mockRequest = new Mock<HttpRequest>();
+
+        //Act
+        var response = await _function.GetStatusAsync(mockRequest.Object);
+
+        //Assert
+        Assert.IsType<OkObjectResult>(response);
+        _serviceStatusProviderMock.Verify(mock => mock.GetServiceStatus(), Times.Once);
     }
 }
