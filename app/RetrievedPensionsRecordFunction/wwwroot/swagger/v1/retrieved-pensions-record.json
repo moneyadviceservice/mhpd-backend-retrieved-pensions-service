@@ -208,6 +208,21 @@
           }
         }
       }
+    },
+    "/api/service/status": {
+      "get": {
+        "tags": [
+          "RetrievedRecordsFunction"
+        ],
+        "summary": "Get Service Status",
+        "description": "Gets the deployed version information of the service",
+        "operationId": "get-status",
+        "responses": {
+          "200": {
+            "description": "Status Data"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -255,8 +270,10 @@
           "x-nullable": true
         },
         "hasIncome": {
-          "type": "string",
-          "x-nullable": true
+          "type": "boolean"
+        },
+        "isMcCloudPension": {
+          "type": "boolean"
         },
         "administratorName": {
           "type": "string",

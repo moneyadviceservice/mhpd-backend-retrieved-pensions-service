@@ -16,7 +16,10 @@ using System.Net;
 
 namespace RetrievedPensionsRecordFunction
 {
-    public class RetrievedRecordsFunction(ILogger<RetrievedRecordsFunction> logger, IPensionRecordRepository repository, IIdValidator validator)
+    public class RetrievedRecordsFunction(ILogger<RetrievedRecordsFunction> logger, 
+        IPensionRecordRepository repository, 
+        IIdValidator validator,
+        IServiceStatusProvider statusProvider)
     {
         [Function("GetRetrievedPeis")]
         [SwaggerOperation(
@@ -74,6 +77,19 @@ namespace RetrievedPensionsRecordFunction
                 await repository.DeleteRetrievedRecordsAsync(userSessionId);
                 return default(int);
             });
+        }
+
+        [Function("GetStatus")]
+        [SwaggerOperation(
+        OperationId = "get-status",
+        Summary = "Get Service Status",
+        Description = "Gets the deployed version information of the service")]
+        [SwaggerResponse((int)HttpStatusCode.OK, Description = "Status Data")]
+        public async Task<IActionResult> GetStatusAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = HttpEndpoints.Internal.Status)] HttpRequest _)
+        {
+            var status = statusProvider.GetServiceStatus();
+
+            return new OkObjectResult(status);
         }
 
         private async Task<IActionResult> ProcessRetrievedRecordsAsync<T>(HttpRequest req, string logSource, Func<string, Task<T>> processor)

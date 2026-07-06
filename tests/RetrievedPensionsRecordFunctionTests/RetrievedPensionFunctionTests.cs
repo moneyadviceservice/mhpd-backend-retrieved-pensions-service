@@ -40,7 +40,7 @@ public class RetrievedPensionFunctionTests
 
         _messageParseMock = new Mock<IMessageParser>();
         var error = new AggregateException(new Exception("Bad Data"));
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Throws(error);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).Throws(error);
 
         _function = new RetrievedPensionsFunction(_loggerMock.Object, _idValidatorMock.Object, _messageParseMock.Object, _repositoryMock.Object, _processorMock.Object);
 
@@ -101,7 +101,7 @@ public class RetrievedPensionFunctionTests
         const string file = "EmptyGuidRecordIdPayload.json";
         RetrievedPensionDetailsPayload? payload = null;
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
 
         var content = DataProvider.GetString(file);
         var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
@@ -125,7 +125,7 @@ public class RetrievedPensionFunctionTests
         var payload = DataProvider.GetPayload(file);
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(false);
 
         var content = DataProvider.GetString(file);
@@ -152,7 +152,7 @@ public class RetrievedPensionFunctionTests
         var payload = DataProvider.GetPayload(file);
         
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
 
         var content = DataProvider.GetString(file);
@@ -183,7 +183,7 @@ public class RetrievedPensionFunctionTests
         var payload = DataProvider.GetPayload("EscapableCharValidRetrievedPensionPayload.json");
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
 
         var content = DataProvider.GetString("EscapableCharValidRetrievedPensionPayload.json");
@@ -214,7 +214,7 @@ public class RetrievedPensionFunctionTests
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
         _idValidatorMock.Setup(x => x.TryExtractPei("ca6f57a9-51de-4e9f-9a5a-d3fddcccd029:d80df6ec-1c02-4a8d-8e72-ceb2dae9b6e4", out holderNameId, out assetId)).Returns(true);
-        _messageParseMock.Setup(x => x.ToRetrievedPensionPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
         _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<string>(), It.IsAny<RetrievedPensionRecord>())).ReturnsAsync(true);
 
         var content = DataProvider.GetString(file);

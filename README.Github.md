@@ -126,3 +126,18 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 - Updated correlation logging for .Net 10.
 - Added support for pensions with multiple benefit illustrations.
 - Updated pension classification for DB pensions
+
+### 🔧 Release 0.13.0 — 2026-05-06
+- Enabled PEI update when newer versions are retrieved from the provider, ensuring the most up-to-date information is stored in the system.
+
+### 🔧 Release 0.14.0 — 2026-05-20
+- Added Support for McCloud DB Pensions.
+- Reduced Holdername configuration cache lifespan to 8 hours.
+
+### 🔧 Release 0.15.0 — 2026-06-03
+- Added Support for CDC Pension Type.
+- Marked McCloud pensions without matching pair of illustrations as unsupported.
+
+### 🔧 Release 0.16.0 — 2026-06-17
+- Added Support for CB Pension Type.
+- Added support for all benefit types in the HYB Pension arrangement type.
