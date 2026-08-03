@@ -47,7 +47,7 @@ public class PensionRecordRepository(ILogger<PensionRecordRepository> logger, IR
 
     public async Task DeleteRetrievedRecordsAsync(string userSessionId)
     {
-        var response = await retrievedPensionRecordRepository.DeleteByIdUserSessionIdAsync(userSessionId);
+        await retrievedPensionRecordRepository.DeleteByIdUserSessionIdAsync(userSessionId);
     }
 
     private async Task<List<RetrievedPensionRecord>> GetRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
