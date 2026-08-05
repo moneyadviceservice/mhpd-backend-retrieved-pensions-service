@@ -20,6 +20,23 @@ public  class PensionRecordRepositoryTests
     }
 
     [Fact]
+    public async Task WhenNewPayloadIsProvided_NewOrExistingRecordIsSaved()
+    {
+        //Arrange
+        var payload = GetPayload();
+
+        //Act
+        var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
+
+        //Assert
+        Assert.True(result);
+        _mockRetrievedPensionRecordRedisRepository.Verify(r => r.UpsertItemAsync(It.Is<RetrievedPensionRecord>(p =>
+            p.AssetId == payload.AssetId &&
+            p.Pei == payload.Pei &&
+            p.UserSessionId == payload.UserSessionId)), Times.Once);
+    }
+
+    [Fact]
     public async Task WhenNoCorrelationIdIsProvided_NewRecordIsNotSaved()
     {
         //Arrange
