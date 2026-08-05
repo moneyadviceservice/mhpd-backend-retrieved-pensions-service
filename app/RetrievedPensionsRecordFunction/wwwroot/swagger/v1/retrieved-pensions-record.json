@@ -233,10 +233,6 @@
     "RetrievedPensionRecord": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "x-nullable": true
-        },
         "correlationId": {
           "type": "string",
           "x-nullable": true

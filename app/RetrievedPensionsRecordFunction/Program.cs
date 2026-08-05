@@ -66,6 +66,7 @@ void RegisterServices(IServiceCollection services, IConfiguration configuration)
     services.ConfigureFunctionsApplicationInsights();
 
     services.AddMhpdCosmosDb(configuration);
+    services.AddMhpdRedis(configuration);
     services.AddMhpdUtilities(configuration);
     services.AddMhpdServiceBusTools();
     services.AddTransformServices();
