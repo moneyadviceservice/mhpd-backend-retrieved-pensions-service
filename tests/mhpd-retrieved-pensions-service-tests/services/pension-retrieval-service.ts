@@ -7,7 +7,7 @@ interface PeiDataItem {
 }
 
 interface GetPensionsRetrievalRecordsResponse {
-  id: string;
+  userSessionId: string;
   peiData?: PeiDataItem[]; // Added this to match your test logic
 }
 
