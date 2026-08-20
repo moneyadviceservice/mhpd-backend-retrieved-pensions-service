@@ -145,3 +145,6 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 1.0.0 — 2026-07-15
 - Added Combination (VAR) pension type.
 - Updated classification configuration of all pension types to match HYB.
+
+### 🔧 Release 1.3.0 — 2026-08-26
+- Moved session storage from Cosmos DB to Redis.
