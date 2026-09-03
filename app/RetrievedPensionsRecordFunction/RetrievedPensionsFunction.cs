@@ -114,15 +114,15 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
 
             logMessage = builder.ToString();
-            logger.LogCritical(error, logMessage);
+            logger.LogServiceError(logMessage, PensionProviderConstants.RetrievalErrorCodes.DataSchemaInvalid, error);
 
-            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId);
+            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, PensionProviderConstants.RetrievalErrorCodes.DataSchemaInvalid);
         }
         catch (Exception error)
         {
             logMessage = $"{InvalidPayloadResponse}: {error.Message}";
-            logger.LogCritical(error, logMessage);
-            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId);
+            logger.LogServiceError(logMessage, PensionProviderConstants.RetrievalErrorCodes.SystemError, error);
+            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, PensionProviderConstants.RetrievalErrorCodes.SystemError);
         }
     }
 
@@ -214,9 +214,9 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return string.IsNullOrWhiteSpace(property) ? defaultValue : property;
     }
 
-    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string userSessionId, string correlationId)
+    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string userSessionId, string correlationId, string errorCode)
     {
-        var error = @"{""errorCode"": """ + PensionProviderConstants.RetrievalErrorCodes.SystemError + @"""}";
+        var error = @"{""errorCode"": """ + errorCode + @"""}";
 
         return new RetrievedPensionRecord
         {
