@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using MhpdCommon.Constants;
+using MhpdCommon.ErrorHandling;
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
@@ -114,15 +115,21 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
 
             logMessage = builder.ToString();
-            logger.LogServiceError(logMessage, PensionProviderConstants.RetrievalErrorCodes.DataSchemaInvalid, error);
+            var schemeName = GetSchemeName(messageBody);
+            var errorCode = PensionProviderConstants.RetrievalErrorCodes.DataSchemaInvalid;
+            var errorContext = ErrorContext.FromErrorCode(errorCode, schemeName);
+            logger.LogServiceError(logMessage, errorContext, error);
 
-            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, PensionProviderConstants.RetrievalErrorCodes.DataSchemaInvalid);
+            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, errorCode);
         }
         catch (Exception error)
         {
             logMessage = $"{InvalidPayloadResponse}: {error.Message}";
-            logger.LogServiceError(logMessage, PensionProviderConstants.RetrievalErrorCodes.SystemError, error);
-            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, PensionProviderConstants.RetrievalErrorCodes.SystemError);
+            var schemeName = GetSchemeName(messageBody);
+            var errorCode = PensionProviderConstants.RetrievalErrorCodes.SystemError;
+            var errorContext = ErrorContext.FromErrorCode(errorCode, schemeName);
+            logger.LogServiceError(logMessage, errorContext, error);
+            return CreateFailedRetrievedPension(pei, userSessionId, message.CorrelationId, errorCode);
         }
     }
 
@@ -245,5 +252,35 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
         logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
+    }
+
+    private static string GetSchemeName(string? viewData)
+    {
+        if (string.IsNullOrEmpty(viewData))
+        {
+            return Constants.UnkonwnPensionScheme;
+        }
+
+        var jsonBytes = Encoding.UTF8.GetBytes(viewData);
+        var reader = new Utf8JsonReader(jsonBytes);
+
+        string? schemeName = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName &&
+                reader.ValueTextEquals(PensionConstants.PensionProviderSchemeName))
+            {
+                reader.Read();
+
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    schemeName = reader.GetString();
+                    break;
+                }
+            }
+        }
+
+        return string.IsNullOrEmpty(schemeName) ? Constants.UnkonwnPensionScheme : schemeName;
     }
 }
