@@ -149,6 +149,36 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return GetArrangementProperty(resultNode, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme, string.Empty);
     }
 
+    private static string GetSchemeName(string? viewData)
+    {
+        if (string.IsNullOrEmpty(viewData))
+        {
+            return Constants.UnkonwnPensionScheme;
+        }
+
+        var jsonBytes = Encoding.UTF8.GetBytes(viewData);
+        var reader = new Utf8JsonReader(jsonBytes);
+
+        string? schemeName = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName &&
+                reader.ValueTextEquals(PensionConstants.PensionProviderSchemeName))
+            {
+                reader.Read();
+
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    schemeName = reader.GetString();
+                    break;
+                }
+            }
+        }
+
+        return string.IsNullOrEmpty(schemeName) ? Constants.UnkonwnPensionScheme : schemeName;
+    }
+
     private static string GetPensionType(JsonNode? resultNode)
     {
         return GetArrangementProperty(resultNode, PensionConstants.PensionType, Constants.UnkonwnPensionType, Constants.UnkonwnPensionType);
@@ -252,35 +282,5 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
         logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
-    }
-
-    private static string GetSchemeName(string? viewData)
-    {
-        if (string.IsNullOrEmpty(viewData))
-        {
-            return Constants.UnkonwnPensionScheme;
-        }
-
-        var jsonBytes = Encoding.UTF8.GetBytes(viewData);
-        var reader = new Utf8JsonReader(jsonBytes);
-
-        string? schemeName = null;
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.PropertyName &&
-                reader.ValueTextEquals(PensionConstants.PensionProviderSchemeName))
-            {
-                reader.Read();
-
-                if (reader.TokenType == JsonTokenType.String)
-                {
-                    schemeName = reader.GetString();
-                    break;
-                }
-            }
-        }
-
-        return string.IsNullOrEmpty(schemeName) ? Constants.UnkonwnPensionScheme : schemeName;
     }
 }
