@@ -16,8 +16,8 @@ resource "azurerm_api_management_api" "retrieved_pensions_record_service" {
   }
 
   import {
-    content_format = "openapi+json"
-    content_value  = replace(data.http.retrieved_pensions_record_spec.response_body, "\"openapi\": \"3.0.4\"", "\"openapi\": \"3.0.1\"")
+    content_format = "swagger-json"
+    content_value  = data.http.retrieved_pensions_record_spec.response_body
   }
 
   lifecycle {

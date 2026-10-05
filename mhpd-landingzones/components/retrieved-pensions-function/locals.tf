@@ -62,7 +62,7 @@ locals {
     value = data.azurerm_servicebus_namespace.mhpd.default_primary_connection_string
   }
 
-  redis_connection_string = "${data.azurerm_key_vault_secret.redis_endpoint.value}:10000,password=${data.azurerm_key_vault_secret.redis_primary_key.value},ssl=True,abortConnect=False"
+  redis_connection_string = "${data.azurerm_key_vault_secret.redis_endpoint.value}:10000,password=${data.azurerm_key_vault_secret.redis_primary_key.value},ssl=True,abortConnect=False,keepAlive=60,connectTimeout=3000,syncTimeout=3000"
 
   retrieved_pensions_app_settings = {
     "APPLICATIONINSIGHTS_CONNECTION_STRING"                   = azurerm_application_insights.this.connection_string
@@ -79,5 +79,6 @@ locals {
     "CosmosBusinessConfiguration__RulesContainer"             = "mhpdPensionClassificationRules"
     "CommonServiceBusConfiguration__InboundQueue"             = "retrieved-pension-details"
     "NewtonsoftJsonSchemaLicense"                             = data.azurerm_key_vault_secret.newtonsoft_json_schema_license.value
+    "SCALE_CONTROLLER_LOGGING_ENABLED"                        = "AppInsights:Verbose"
   }
 }
