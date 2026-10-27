@@ -79,6 +79,5 @@ locals {
     "CosmosBusinessConfiguration__RulesContainer"             = "mhpdPensionClassificationRules"
     "CommonServiceBusConfiguration__InboundQueue"             = "retrieved-pension-details"
     "NewtonsoftJsonSchemaLicense"                             = data.azurerm_key_vault_secret.newtonsoft_json_schema_license.value
-    "SCALE_CONTROLLER_LOGGING_ENABLED"                        = "AppInsights:Verbose"
   }
 }

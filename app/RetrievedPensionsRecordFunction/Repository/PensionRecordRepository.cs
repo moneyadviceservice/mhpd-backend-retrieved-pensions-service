@@ -1,10 +1,9 @@
 ﻿using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
-using Microsoft.Extensions.Logging;
 
 namespace RetrievedPensionsRecordFunction.Repository;
 
-public class PensionRecordRepository(ILogger<PensionRecordRepository> logger, IRetrievedPensionRecordRedisRepository retrievedPensionRecordRepository) 
+public class PensionRecordRepository(IRetrievedPensionRecordRedisRepository retrievedPensionRecordRepository) 
     : IPensionRecordRepository
 {
     public async Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null)
@@ -33,16 +32,9 @@ public class PensionRecordRepository(ILogger<PensionRecordRepository> logger, IR
         return [.. response.Select(record => record.Pei!)];
     }
 
-    public async Task<bool> SaveRetrievedPensionRecordAsync(string? correlationId, RetrievedPensionRecord record)
+    public async Task SaveRetrievedPensionRecordAsync(RetrievedPensionRecord record)
     {
-        if (string.IsNullOrWhiteSpace(correlationId))
-        {
-            logger.LogError("Correlation Id is null.");
-            return false;
-        }
-
         await retrievedPensionRecordRepository.UpsertItemAsync(record);
-        return true;
     }
 
     public async Task DeleteRetrievedRecordsAsync(string userSessionId)

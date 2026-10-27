@@ -12,7 +12,6 @@ using RetrievedPensionsRecordFunction.Models;
 using RetrievedPensionsRecordFunction.Repository;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using static MhpdCommon.ViewData.EvaluationConstants;
 
 namespace RetrievedPensionsRecordFunction;
@@ -47,20 +46,23 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
         using var scope = logger.BeginCorrelationScope(message.CorrelationId, Constants.QueueLogSource);
 
-        LogRequestMesage(message);
+        var enqueudTimespan = DateTimeOffset.UtcNow - message.EnqueuedTime;
+        if (enqueudTimespan.TotalSeconds > 5)
+        {
+            logger.LogMhpdWarning("Message with MessageId: {MessageId}, CorrelationId: {CorrelationId} has been in the queue for {EnqueudTimespan}.", message.MessageId, message.CorrelationId, enqueudTimespan);
+        }
 
         try
         {
             var payload = await ExtractAndValidateMessagePayloadAsync(message);
+            await pensionRepository.SaveRetrievedPensionRecordAsync(payload);
+            await messageActions.CompleteMessageAsync(message);
 
-            if (await pensionRepository.SaveRetrievedPensionRecordAsync(message.CorrelationId, payload))
-            {
-                await messageActions.CompleteMessageAsync(message);
-            }
-            else
-            {
-                await messageActions.AbandonMessageAsync(message);
-            }
+            logger.LogMhpdWarning(
+            "Retrieved Pension Record with AssetId: {AssetId}, from SchemeName: {SchemeName}, Administrator: {Administrator}",
+            payload.AssetId,
+            payload.SchemeName,
+            payload.Administrator);
         }
         catch (Exception error)
         {
@@ -83,8 +85,8 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
             ArgumentNullException.ThrowIfNull(payload);
 
-            var root = JsonNode.Parse(classifiedPayload)?.AsObject();
-            var resultNode = root?[PensionConstants.RetrievalResult];
+            var root = JsonDocument.Parse(classifiedPayload).RootElement;
+            var resultNode = root.GetProperty(PensionConstants.RetrievalResult);
 
             var record = new RetrievedPensionRecord
             {
@@ -133,18 +135,18 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
     }
 
-    private static string GetCategory(JsonNode? resultNode)
+    private static string GetCategory(JsonElement resultNode)
     {
         return GetArrangementProperty(resultNode, PensionConstants.PensionCategory, Category.Unsupported);
     }
 
-    private string GetAssetId(JsonNode? resultNode, string pei)
+    private string GetAssetId(JsonElement resultNode, string pei)
     {
         idValidator.TryExtractPei(pei, out _, out var assetId);
         return GetArrangementProperty(resultNode, PensionConstants.ExternalAssetId, assetId, assetId);
     }
 
-    private static string GetSchemeName(JsonNode? resultNode)
+    private static string GetSchemeName(JsonElement resultNode)
     {
         return GetArrangementProperty(resultNode, PensionConstants.SchemeName, Constants.UnkonwnPensionScheme, string.Empty);
     }
@@ -156,76 +158,60 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             return Constants.UnkonwnPensionScheme;
         }
 
-        var jsonBytes = Encoding.UTF8.GetBytes(viewData);
-        var reader = new Utf8JsonReader(jsonBytes);
+        var root = JsonDocument.Parse(viewData).RootElement;
+        var resultNode = root.GetProperty(PensionConstants.RetrievalResult);
 
-        string? schemeName = null;
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.PropertyName &&
-                reader.ValueTextEquals(PensionConstants.PensionProviderSchemeName))
-            {
-                reader.Read();
-
-                if (reader.TokenType == JsonTokenType.String)
-                {
-                    schemeName = reader.GetString();
-                    break;
-                }
-            }
-        }
+        var schemeName = GetSchemeName(resultNode);
 
         return string.IsNullOrEmpty(schemeName) ? Constants.UnkonwnPensionScheme : schemeName;
     }
 
-    private static string GetPensionType(JsonNode? resultNode)
+    private static string GetPensionType(JsonElement resultNode)
     {
         return GetArrangementProperty(resultNode, PensionConstants.PensionType, Constants.UnkonwnPensionType, Constants.UnkonwnPensionType);
     }
 
-    private static string GetMatchType(JsonNode? resultNode)
+    private static string GetMatchType(JsonElement resultNode)
     {
         return GetArrangementProperty(resultNode, PensionConstants.MatchType, Constants.UnkonwnMatchType, Constants.UnkonwnMatchType);
     }
 
-    private static bool GetIncome(JsonNode? resultNode)
+    private static bool GetIncome(JsonElement resultNode)
     {
         return GetBooleanProperty(resultNode, PensionConstants.HasIncome);
     }
 
-    private static bool GetMcCloud(JsonNode? resultNode)
+    private static bool GetMcCloud(JsonElement resultNode)
     {
         return GetBooleanProperty(resultNode, PensionConstants.HasMultipleIncomeOptions);
     }
 
-    private static bool GetBooleanProperty(JsonNode? resultNode, string propertyPath)
+    private static bool GetBooleanProperty(JsonElement resultNode, string propertyPath)
     {
         var pathValue = GetArrangementProperty(resultNode, propertyPath, Boolean.FalseString, Boolean.FalseString);
-
         return bool.TryParse(pathValue, out var isSet) && isSet;
     }
 
-    private static string GetAdministrator(JsonNode? resultNode)
+    private static string GetAdministrator(JsonElement resultNode)
     {
         return GetArrangementProperty(resultNode, $"{PensionConstants.PensionAdministrator}.name", Constants.UnkonwnAdministrator, Constants.UnkonwnAdministrator);
     }
 
-    private static string GetArrangementProperty(JsonNode? resultNode, string propertyPath, string defaultValue, string valueOnError = Category.Error)
+    private static string GetArrangementProperty(JsonElement resultNode, string propertyPath, string defaultValue, string valueOnError = Category.Error)
     {
-        if(resultNode == null || (resultNode is JsonObject result && result.TryGetPropertyValue(PensionConstants.ErrorCode, out _)))
+        if (resultNode.ValueKind == JsonValueKind.Object && resultNode.TryGetProperty(PensionConstants.ErrorCode, out _))
         {
             return valueOnError;
         }
 
         var segments = propertyPath.Split('.');
-        JsonNode? currentNode = resultNode;
+        JsonElement current = resultNode;
 
         foreach (var segment in segments)
         {
-            if (currentNode is JsonObject obj && obj.TryGetPropertyValue(segment, out var next))
+            if (current.ValueKind == JsonValueKind.Object && current.TryGetProperty(segment, out var next))
             {
-                currentNode = next;
+                current = next;
             }
             else
             {
@@ -233,22 +219,46 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             }
         }
 
-        return currentNode?.GetValue<object>()?.ToString()?.Trim('"') ?? defaultValue;
+        return current.ValueKind switch
+        {
+            JsonValueKind.String => current.GetString() ?? defaultValue,
+            JsonValueKind.Number => current.GetRawText(),
+            JsonValueKind.True => Boolean.TrueString,
+            JsonValueKind.False => Boolean.FalseString,
+            _ => current.ValueKind == JsonValueKind.Null ? defaultValue : current.GetRawText()?.Trim('"') ?? defaultValue
+        };
     }
 
-    private static (string pei, string userSessionId, string? pensionLinkId) GetPayloadIds(string? messagePayload)
+    private (string pei, string userSessionId, string? pensionLinkId) GetPayloadIds(string? messagePayload)
     {
-        var resultNode = JsonNode.Parse(messagePayload!);
-        var pei = GetPayloadProperty(resultNode, PensionConstants.Pei, $"{Guid.NewGuid()}:{Guid.NewGuid()}");
-        var userSessionId = GetPayloadProperty(resultNode, PensionConstants.UserSessionId, $"{Guid.NewGuid()}");
-        var pensionLinkId = GetPayloadProperty(resultNode, PensionConstants.ExternalPensionPolicyId, null);
-        return (pei!, userSessionId!, pensionLinkId);
+        try
+        {
+            using var doc = JsonDocument.Parse(messagePayload!);
+            var root = doc.RootElement;
+
+            var pei = GetPayloadProperty(root, PensionConstants.Pei);
+            var userSessionId = GetPayloadProperty(root, PensionConstants.UserSessionId);
+            var pensionLinkId = GetPayloadProperty(root, PensionConstants.ExternalPensionPolicyId);
+
+            return (pei!, userSessionId!, pensionLinkId);
+        }
+        catch (Exception error)
+        {
+            var context = ErrorContext.FromErrorCode(PensionProviderConstants.RetrievalErrorCodes.DataPayloadInvalid);
+            logger.LogServiceError("Unable to read retrieved pension details.", context, error);
+            throw;
+        }
     }
 
-    private static string? GetPayloadProperty(JsonNode? resultNode, string propertyName, string? defaultValue)
+    private static string? GetPayloadProperty(JsonElement root, string propertyName)
     {
-        var property = resultNode?[propertyName]?.GetValue<string>();
-        return string.IsNullOrWhiteSpace(property) ? defaultValue : property;
+        if (root.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String)
+        {
+            var value = property.GetString();
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        return null;
     }
 
     private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string userSessionId, string correlationId, string errorCode)
@@ -270,17 +280,5 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
             Administrator = Constants.UnkonwnAdministrator,
             RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
         };
-    }
-
-    private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
-    {
-        var enqueudTimespan = DateTimeOffset.UtcNow - receivedMessage.EnqueuedTime;
-        if (enqueudTimespan.TotalSeconds > 5)
-        {
-            logger.LogWarning("Message with MessageId: {MessageId}, CorrelationId: {CorrelationId} has been in the queue for {EnqueudTimespan}.", receivedMessage.MessageId, receivedMessage.CorrelationId, enqueudTimespan);
-        }
-
-        var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
-        logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
     }
 }

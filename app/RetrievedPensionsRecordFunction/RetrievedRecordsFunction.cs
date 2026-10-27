@@ -110,8 +110,6 @@ namespace RetrievedPensionsRecordFunction
 
             var userSessionId = req.Headers[HeaderConstants.UserSessionId].ToString();
 
-            logger.LogRequestReceived($"{logSource} for session Id: {userSessionId}");
-
             if (!validator.IsValidGuid(userSessionId))
             {
                 logger.LogError("Unable to service request for session [{SessionId}]: {Reason}", userSessionId, Constants.InvalidSessionId);
@@ -119,8 +117,6 @@ namespace RetrievedPensionsRecordFunction
             }
 
             var records = await processor(userSessionId);
-
-            logger.LogResponseSent(records);
 
             return new OkObjectResult(records);
         }

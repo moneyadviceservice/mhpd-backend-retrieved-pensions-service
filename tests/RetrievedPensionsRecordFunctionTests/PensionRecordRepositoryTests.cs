@@ -1,6 +1,5 @@
 ﻿using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
-using Microsoft.Extensions.Logging;
 using Moq;
 using RetrievedPensionsRecordFunction.Repository;
 using RetrievedPensionsRecordFunctionTests.Data;
@@ -14,9 +13,8 @@ public  class PensionRecordRepositoryTests
 
     public PensionRecordRepositoryTests()
     {
-        var loggerMock = new Mock<ILogger<PensionRecordRepository>>();
         _mockRetrievedPensionRecordRedisRepository = new Mock<IRetrievedPensionRecordRedisRepository>();
-        _repository = new PensionRecordRepository(loggerMock.Object, _mockRetrievedPensionRecordRedisRepository.Object);
+        _repository = new PensionRecordRepository(_mockRetrievedPensionRecordRedisRepository.Object);
     }
 
     [Fact]
@@ -26,27 +24,13 @@ public  class PensionRecordRepositoryTests
         var payload = GetPayload();
 
         //Act
-        var result = await _repository.SaveRetrievedPensionRecordAsync("CorrelationId", payload);
+        await _repository.SaveRetrievedPensionRecordAsync(payload);
 
         //Assert
-        Assert.True(result);
         _mockRetrievedPensionRecordRedisRepository.Verify(r => r.UpsertItemAsync(It.Is<RetrievedPensionRecord>(p =>
             p.AssetId == payload.AssetId &&
             p.Pei == payload.Pei &&
             p.UserSessionId == payload.UserSessionId)), Times.Once);
-    }
-
-    [Fact]
-    public async Task WhenNoCorrelationIdIsProvided_NewRecordIsNotSaved()
-    {
-        //Arrange
-        var payload = GetPayload();
-
-        //Act
-        var result = await _repository.SaveRetrievedPensionRecordAsync("            ", payload);
-
-        //Assert
-        Assert.False(result);
     }
 
     [Fact]
@@ -82,8 +66,6 @@ public  class PensionRecordRepositoryTests
         RetrievedPensionRecord retrievedPensionRecord = withPensionLink
             ? new RetrievedPensionRecord { AssetId = "A", PensionLinkId = "XYZ", Category = "CONFIRMED" }
             : new RetrievedPensionRecord { AssetId = "B", Category = "CONFIRMED" };
-
-        List<RetrievedPensionRecord> detailRecord = [ retrievedPensionRecord ];
 
         List<RetrievedPensionRecord> allRecords = [
             new RetrievedPensionRecord{ AssetId = "A", PensionLinkId = "XYZ", Category = "CONFIRMED"},
