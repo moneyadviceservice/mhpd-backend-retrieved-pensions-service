@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
-    "strict": true,
     "paths": {
-      "@services/*": ["services/*"],
-      "@lib/*": ["lib/*"]
+      "@services/*": ["./services/*"],
+      "@lib/*": ["./lib/*"],
+      "utilities/*": ["./utilities/*"],
+      "schemas/*": ["./schemas/*"]
     }
   }
 }
