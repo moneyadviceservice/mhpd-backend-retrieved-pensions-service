@@ -158,3 +158,6 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 
 ### 🔧 Release 1.8.0 — 2026-11-04
 - Optimized telemetry logging.
+
+### 🔧 Release 1.9.0 — 2026-11-18
+- Updated handling of viewdata with multiple arrangements to ensure all arrangements are processed, stored correctly and accessible to the dashboard.
