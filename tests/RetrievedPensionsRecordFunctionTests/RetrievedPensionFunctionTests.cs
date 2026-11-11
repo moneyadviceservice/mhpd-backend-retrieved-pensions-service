@@ -139,7 +139,6 @@ public class RetrievedPensionFunctionTests
 
 
     [Theory]
-    [InlineData("ValidRetrievedPensionPayload.json", Category.Contact, "1ba03e25-659a-43b8-ae77-b956df168969", "e01a9df7-f147-4a3a-a1dd-0507432a5b7f")]
     [InlineData("DB_ERI-DB_AP-NONE-Payload.json", Category.Confirmed, "b057131c-d860-40db-b521-15e62a078128", null)]
     [InlineData("DC_ERI-NET_AP-ANO-Payload.json", Category.Pending, "9f1bfd4a-4e39-4c59-bac5-c6860250f962", null)]
     [InlineData("DC_ERI-NONE-SML_AP-NONE-Payload.json", Category.Confirmed, "89885682-d540-4abe-a075-bc25a46b79df", null)]
@@ -170,6 +169,40 @@ public class RetrievedPensionFunctionTests
                 record.Category == category &&
                 record.PensionLinkId == pensionLink &&
                 record.AssetId == assetId)), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("ValidRetrievedPensionPayload.json", "1ba03e25-659a-43b8-ae77-b956df168969", "e01a9df7-f147-4a3a-a1dd-0507432a5b7f")]
+    public async Task Run_ShouldCallCompleteMessage_OnMultipleArrangements(string file, string assetId, string? pensionLink)
+    {
+        ResetInvocations();
+
+        //arrange
+        var payload = DataProvider.GetPayload(file);
+
+        _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
+        _messageParseMock.Setup(x => x.ToRetrievedPensionPayloadAsync(It.IsAny<string>())).ReturnsAsync(payload);
+        _repositoryMock.Setup(x => x.SaveRetrievedPensionRecordAsync(It.IsAny<RetrievedPensionRecord>())).Verifiable();
+
+        var content = DataProvider.GetString(file);
+        var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
+            body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
+
+        // Act
+        await _function.Run([message], _actionsMock.Object);
+
+        // Assert
+        _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(r => r.SaveRetrievedPensionRecordAsync(
+            It.Is<RetrievedPensionRecord[]>(record =>
+                record.All(r => r.Pei == payload!.Pei &&
+                                r.UserSessionId == payload!.UserSessionId &&
+                                r.PensionLinkId == pensionLink &&
+                                r.AssetId.StartsWith(assetId)))), Times.Once);
+
+            _repositoryMock.Verify(r => r.SaveRetrievedPensionRecordAsync(
+            It.Is<RetrievedPensionRecord[]>(record =>
+                record.Length == payload!.RetrievalResult!.Length)), Times.Once);
     }
 
     [Fact]

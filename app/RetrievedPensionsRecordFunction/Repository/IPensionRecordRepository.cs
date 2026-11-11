@@ -4,7 +4,7 @@ namespace RetrievedPensionsRecordFunction.Repository;
 
 public interface IPensionRecordRepository
 {
-    Task SaveRetrievedPensionRecordAsync(RetrievedPensionRecord record);
+    Task SaveRetrievedPensionRecordAsync(params RetrievedPensionRecord[] records);
 
     Task<List<RetrievedPensionRecord>> GetRetrievedRecordsAsync(string userSessionId, string? category = null, string? assetId = null);
 

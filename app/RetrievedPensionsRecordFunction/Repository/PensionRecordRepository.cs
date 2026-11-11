@@ -32,9 +32,9 @@ public class PensionRecordRepository(IRetrievedPensionRecordRedisRepository retr
         return [.. response.Select(record => record.Pei!)];
     }
 
-    public async Task SaveRetrievedPensionRecordAsync(RetrievedPensionRecord record)
+    public async Task SaveRetrievedPensionRecordAsync(params RetrievedPensionRecord[] records)
     {
-        await retrievedPensionRecordRepository.UpsertItemAsync(record);
+        await retrievedPensionRecordRepository.UpsertItemAsync(records);
     }
 
     public async Task DeleteRetrievedRecordsAsync(string userSessionId)

@@ -55,14 +55,14 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         try
         {
             var payload = await ExtractAndValidateMessagePayloadAsync(message);
-            await pensionRepository.SaveRetrievedPensionRecordAsync(payload);
+            await pensionRepository.SaveRetrievedPensionRecordAsync([.. payload]);
             await messageActions.CompleteMessageAsync(message);
 
             logger.LogMhpdWarning(
             "Retrieved Pension Record with AssetId: {AssetId}, from SchemeName: {SchemeName}, Administrator: {Administrator}",
-            payload.AssetId,
-            payload.SchemeName,
-            payload.Administrator);
+            payload[0].AssetId,
+            payload[0].SchemeName,
+            payload[0].Administrator);
         }
         catch (Exception error)
         {
@@ -71,12 +71,13 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         }
     }
 
-    private async Task<RetrievedPensionRecord> ExtractAndValidateMessagePayloadAsync(ServiceBusReceivedMessage message)
+    private async Task<List<RetrievedPensionRecord>> ExtractAndValidateMessagePayloadAsync(ServiceBusReceivedMessage message)
     {
         var messageBody = Encoding.UTF8.GetString(message.Body);
         string? logMessage;
         RetrievedPensionDetailsPayload? payload;
         var (pei, userSessionId, pensionLinkId) = GetPayloadIds(messageBody);
+        var records = new List<RetrievedPensionRecord>();
 
         try
         {
@@ -85,27 +86,30 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
 
             ArgumentNullException.ThrowIfNull(payload);
 
-            var root = JsonDocument.Parse(classifiedPayload).RootElement;
-            var resultNode = root.GetProperty(PensionConstants.RetrievalResult);
-
-            var record = new RetrievedPensionRecord
+            foreach(var result in payload.RetrievalResult!)
             {
-                CorrelationId = message.CorrelationId,
-                Pei = pei,
-                UserSessionId = userSessionId,
-                PensionLinkId = pensionLinkId,
-                AssetId = GetAssetId(resultNode, pei),
-                Category = GetCategory(resultNode),
-                SchemeName = GetSchemeName(resultNode),
-                PensionType = GetPensionType(resultNode),
-                MatchType = GetMatchType(resultNode),
-                HasIncome = GetIncome(resultNode),
-                IsMcCloudPension = GetMcCloud(resultNode),
-                Administrator = GetAdministrator(resultNode),
-                RetrievalResult = payload.RetrievalResult,
-            };
+                var arrangement = JsonDocument.Parse(result.GetRawText()).RootElement;
+                var record = new RetrievedPensionRecord
+                {
+                    CorrelationId = message.CorrelationId,
+                    Pei = pei,
+                    UserSessionId = userSessionId,
+                    PensionLinkId = pensionLinkId,
+                    AssetId = GetAssetId(arrangement, pei),
+                    Category = GetCategory(arrangement),
+                    SchemeName = GetSchemeName(arrangement),
+                    PensionType = GetPensionType(arrangement),
+                    MatchType = GetMatchType(arrangement),
+                    HasIncome = GetIncome(arrangement),
+                    IsMcCloudPension = GetMcCloud(arrangement),
+                    Administrator = GetAdministrator(arrangement),
+                    RetrievalResult = result,
+                };
 
-            return record;
+                records.Add(record);
+            }
+
+            return records;
         }
         catch (AggregateException error)
         {
@@ -261,24 +265,26 @@ public class RetrievedPensionsFunction(ILogger<RetrievedPensionsFunction> logger
         return null;
     }
 
-    private static RetrievedPensionRecord CreateFailedRetrievedPension(string pei, string userSessionId, string correlationId, string errorCode)
+    private static List<RetrievedPensionRecord> CreateFailedRetrievedPension(string pei, string userSessionId, string correlationId, string errorCode)
     {
         var error = @"{""errorCode"": """ + errorCode + @"""}";
 
-        return new RetrievedPensionRecord
-        {
-            Pei = pei,
-            CorrelationId = correlationId,
-            UserSessionId = userSessionId,
-            PensionType = Constants.UnkonwnPensionType,
-            MatchType = Constants.UnkonwnMatchType,
-            AssetId = Guid.NewGuid().ToString(),
-            Category = Category.Error,
-            SchemeName = Constants.UnkonwnPensionScheme,
-            HasIncome = false,
-            IsMcCloudPension = false,
-            Administrator = Constants.UnkonwnAdministrator,
-            RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
-        };
+        return
+        [
+            new() {
+                Pei = pei,
+                CorrelationId = correlationId,
+                UserSessionId = userSessionId,
+                PensionType = Constants.UnkonwnPensionType,
+                MatchType = Constants.UnkonwnMatchType,
+                AssetId = Guid.NewGuid().ToString(),
+                Category = Category.Error,
+                SchemeName = Constants.UnkonwnPensionScheme,
+                HasIncome = false,
+                IsMcCloudPension = false,
+                Administrator = Constants.UnkonwnAdministrator,
+                RetrievalResult = JsonSerializer.Deserialize<dynamic>(error)
+            }
+        ];
     }
 }

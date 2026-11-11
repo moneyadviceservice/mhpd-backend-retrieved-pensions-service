@@ -2,38 +2,114 @@
   "externalPensionPolicyId": "e01a9df7-f147-4a3a-a1dd-0507432a5b7f",
   "userSessionId": "e01a9df7-f147-4a3a-a1dd-0507432a5b7f",
   "pei": "7075aa11-10ad-4b2f-a9f5-1068e79119bf:1ba03e25-659a-43b8-ae77-b956df168969",
-  "retrievalResult": {
-    "externalAssetId": "1ba03e25-659a-43b8-ae77-b956df168969",
-    "matchType": "POSS",
-    "pensionCategory": "CONTACT",
-    "schemeName": "My Company Direct Contribution Scheme",
-    "alternateSchemeNames": [
-      {
-        "name": "Converted from My Old Direct Contribution Scheme",
-        "alternateNameType": "FOR"
-      }
-    ],
-    "contactReference": "Q12345",
-    "pensionAdministrator": {
-      "name": "Pension Company 1",
-      "contactMethods": [
+  "retrievalResult": [
+    {
+      "externalAssetId": "1ba03e25-659a-43b8-ae77-b956df168969:0",
+      "matchType": "POSS",
+      "pensionCategory": "CONTACT",
+      "schemeName": "My Company Direct Contribution Scheme",
+      "alternateSchemeNames": [
         {
-          "preferred": false,
-          "contactMethodDetails": {
-            "email": "example@examplemyline.com"
+          "name": "Converted from My Old Direct Contribution Scheme",
+          "alternateNameType": "FOR"
+        }
+      ],
+      "contactReference": "Q12345",
+      "pensionAdministrator": {
+        "name": "Pension Company 1",
+        "contactMethods": [
+          {
+            "preferred": false,
+            "contactMethodDetails": {
+              "email": "example@examplemyline.com"
+            }
+          },
+          {
+            "preferred": true,
+            "contactMethodDetails": {
+              "number": "+123 1111111111",
+              "usage": [
+                "A",
+                "M"
+              ]
+            }
           }
+        ]
+      }
+    },
+    {
+      "externalAssetId": "1ba03e25-659a-43b8-ae77-b956df168969:1",
+      "schemeName": "Prime Lifetime Fund",
+      "matchType": "DEFN",
+      "retirementDate": "2048-07-25",
+      "dateOfBirth": "1983-04-11",
+      "pensionType": "DB",
+      "pensionOrigin": "PT",
+      "pensionStatus": "I",
+      "contactReference": "GH23IJ",
+      "startDate": "2008-05-01",
+      "benefitIllustrations": [
+        {
+          "illustrationDate": "2025-06-05",
+          "illustrationComponents": [
+            {
+              "illustrationType": "ERI",
+              "survivorBenefit": false,
+              "safeguardedBenefit": false,
+              "unavailableReason": "DB"
+            },
+            {
+              "illustrationType": "AP",
+              "survivorBenefit": false,
+              "safeguardedBenefit": false,
+              "benefitType": "DB",
+              "calculationMethod": "BS",
+              "payableDetails": {
+                "amountType": "INC",
+                "annualAmount": 4000,
+                "payableDate": "2049-08-23",
+                "monthlyAmount": 333.33
+              }
+            }
+          ],
+          "illustrationCategory": "CONFIRMED"
+        }
+      ],
+      "pensionAdministrator": {
+        "name": "Guardian Pension Services",
+        "contactMethods": [
+          {
+            "preferred": true,
+            "contactMethodDetails": {
+              "url": "https://Guardian.com"
+            }
+          },
+          {
+            "preferred": false,
+            "contactMethodDetails": {
+              "email": "pensioninfo@Guardian.com"
+            }
+          }
+        ]
+      },
+      "additionalDataSources": [
+        {
+          "informationType": "C_AND_C",
+          "url": "https://Guardian/costs"
         },
         {
-          "preferred": true,
-          "contactMethodDetails": {
-            "number": "+123 1111111111",
-            "usage": [
-              "A",
-              "M"
-            ]
-          }
+          "informationType": "ANR",
+          "url": "https://Guardian/ANR"
+        }
+      ],
+      "employmentMembershipPeriods": [
+        {
+          "employerName": "Prime",
+          "employerStatus": "H",
+          "membershipStartDate": "2008-04-22",
+          "membershipEndDate": "2020-03-04"
         }
       ]
     }
-  }
+  ]
 }
